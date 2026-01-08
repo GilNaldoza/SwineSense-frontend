@@ -43,4 +43,22 @@ client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+// Handle 401 Unauthorized globally
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid or expired
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      
+      // Redirect to sign-in if not already there
+      if (!window.location.pathname.includes("/sign-in")) {
+        window.location.href = "/sign-in";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default client;

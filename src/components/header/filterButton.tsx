@@ -13,11 +13,13 @@ import { columns } from "@/features/tableRecords/columns"
 import { useTableFilter } from "@/components/table/tableFilterStore"
 import { useSort } from "@/components/table/sortStore"
 import { LABELS, type SortOption } from "@/components/table/sortConfig"
+import { useOptionalYearLevel } from "@/components/table/yearLevelStore"
 import { SlidersHorizontal } from "lucide-react"
 
 export default function FilterButton() {
   const { isSelected, toggle } = useTableFilter()
   const { sort, setSort } = useSort()
+  const yearCtx = useOptionalYearLevel()
 
   return (
     <DropdownMenu>
@@ -65,6 +67,22 @@ export default function FilterButton() {
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuLabel>Year level</DropdownMenuLabel>
+        {yearCtx ? (
+          <DropdownMenuRadioGroup
+            value={yearCtx.yearLevel}
+            onValueChange={(v) => yearCtx.setYearLevel((v as string) || "all")}
+          >
+            {(["all", "1", "2", "3", "4", "5"] as const).map((lvl) => (
+              <DropdownMenuRadioItem key={lvl} value={lvl}>
+                {lvl === "all" ? "All" : `Year ${lvl}`}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

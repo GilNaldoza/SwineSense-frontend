@@ -1,17 +1,25 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import ReusableTable from "@/components/table/reusableTable"
 import { rows as mockRows } from "@/mockData/records"
 import { columns } from "./columns"
 import { useLayout } from "@/components/layout/useLayout"
 import { type SortOption, useSort } from "@/components/table/sortStore"
 import { useSearch } from "@/components/table/searchStore"
+import { useOptionalYearLevel } from "@/components/table/yearLevelStore"
+import { useLocationFilter } from "@/components/table/LocationContext"
+import { useDateRangeFilter } from "@/components/table/DateRangeContext"
+import { useDepartmentCollegeFilter } from "@/components/table/DepartmentCollegeContext"
 import { type EntryRow } from "@/api/entries"
 import { useEntries } from "@/hooks/tableRecords/useEntries"
 import { deleteEntriesByLogIds } from "@/api/entries"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTableSelection } from "@/components/table/SelectionContext"
 import { toast } from "sonner"
+import WobbleFlipLoader from "@/components/ui/WobbleFlipLoader"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import StudentForm, { type StudentValues } from "@/components/form/formComponent"
+import { useUpdateUser } from "@/hooks/form/useUpdateUser"
 
 type Row = {
   id: string
@@ -72,13 +80,37 @@ const sortRows = (rowsData: Row[], option: SortOption) => {
 const TableRecords = () => {
   const { sort } = useSort()
   const { query } = useSearch()
+  const yearCtx = useOptionalYearLevel()
+  const { location: locationFilter } = useLocationFilter()
+  const { startDate, endDate } = useDateRangeFilter()
+  const { college, department } = useDepartmentCollegeFilter()
 
   const { section } = useLayout()
 
-  const [page, setPage] = React.useState<number>(1)
+  const location = useLocation()
+  const initialPage = React.useMemo(() => {
+    const state = (location.state as { page?: unknown } | null) || null
+    const p = Number(state?.page)
+    return Number.isFinite(p) && p > 0 ? p : 1
+  }, [location.state])
+  const [page, setPage] = React.useState<number>(initialPage)
+  // Clear router state after using the preserved page so it doesn't stick across refreshes
+  React.useEffect(() => {
+    const st = location.state as { page?: unknown } | null
+    if (st?.page != null) {
+      // Replace current entry without state to avoid sticky page on reload/back
+      navigate(location.pathname, { replace: true, state: undefined })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  // Capture the initial filter signature on mount to suppress auto-resets
+  const filterKey = `${section}|${String(query ?? '')}|${String(sort ?? '')}|${String(yearCtx?.yearLevel ?? 'all')}`
+  const initialFilterKeyRef = React.useRef<string | null>(null)
 
 
-  // Map UI sort option to backend sort parameter
+  const [editData, setEditData] = React.useState<{userId: string, initial: StudentValues} | null>(null)
+  const updateMut = useUpdateUser()
+
   const mapSortToBackend = React.useCallback((s: SortOption | undefined) => {
     switch (s) {
       case "date_desc":
@@ -102,7 +134,20 @@ const TableRecords = () => {
   // and manages loading/refresh behavior; we send section/query/sort/page as keys.
   const backendSort = mapSortToBackend(sort)
   const userType = section === "Students" ? "student" : section === "Faculties" ? "faculty" : "all"
-  const entriesQuery = useEntries({ userType, query: String(query || "") || undefined, limit: 10, page, sort: backendSort })
+  const selectedYear = (yearCtx?.yearLevel && yearCtx.yearLevel !== 'all') ? String(yearCtx.yearLevel) : undefined
+  const entriesQuery = useEntries({ 
+    userType, 
+    query: String(query || "") || undefined, 
+    limit: 10, 
+    page, 
+    sort: backendSort, 
+    yearLevel: selectedYear,
+    location: locationFilter || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    college: college || undefined,
+    department: department || undefined
+  })
 
   const isLoading = entriesQuery.isLoading
   const isError = entriesQuery.isError
@@ -111,10 +156,32 @@ const TableRecords = () => {
   const total = resp?.pagination?.total
   const data = resp?.entries ?? null
 
-  // Reset to first page when filters or sort change
+  // Initialize the baseline filter signature once on mount
   React.useEffect(() => {
-    setPage(1)
-  }, [section, query, sort])
+    if (initialFilterKeyRef.current == null) {
+      initialFilterKeyRef.current = filterKey
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Reset to first page when filters or sort change, but if we returned from
+  // Edit with a preserved page (>1) and filters are still identical to the
+  // baseline, do not reset. Once filters change from the baseline, re-enable
+  // normal reset behavior for future changes.
+  const returnedWithPageRef = React.useRef(initialPage > 1)
+  React.useEffect(() => {
+    const baseline = initialFilterKeyRef.current
+    const unchanged = baseline === filterKey
+    if (returnedWithPageRef.current && unchanged) return
+    // If this is the first actual change after return, drop the guard and reset
+    if (returnedWithPageRef.current && !unchanged) {
+      returnedWithPageRef.current = false
+      setPage(1)
+      return
+    }
+    // Regular behavior: any subsequent change resets to page 1
+    if (!returnedWithPageRef.current) setPage(1)
+  }, [filterKey])
 
   const navigate = useNavigate()
 
@@ -126,6 +193,9 @@ const TableRecords = () => {
     return mockRows as unknown as EntryRow[]
   }, [data, isLoading, isError])
 
+  // Live updates handled internally by useEntries refetchInterval
+  // useLogStream(true) 
+
   // When using server-side fetching, the backend returns already-filtered and sorted rows.
   // Avoid applying client-side filter/sort in that case. This keeps behavior consistent with
   // production rules where filters and sort are applied by the API.
@@ -133,21 +203,34 @@ const TableRecords = () => {
 
   const displayedRows = React.useMemo(() => {
     if (useServerSide) return rowsSource
-
     const q = String(query || "").trim().toLowerCase()
-    // First filter rows based on the sidebar section selection (Students, Faculties, All)
-    const filteredBySection = rowsSource.filter((r) => {
+
+    const base = rowsSource.filter((r) => {
       if (section === "Students") return r.role === "student"
       if (section === "Faculties") return r.role === "faculty"
       return true
     })
 
-    if (!q) return filteredBySection
-    return filteredBySection.filter((r) => {
-      const fields = [r.id, r.firstName, r.lastName, r.department, r.college, r.logDate, r.logTime]
-      return fields.some((f) => String(f ?? "").toLowerCase().includes(q))
-    })
-  }, [rowsSource, query, section, useServerSide])
+    const afterSearch = q
+      ? base.filter((r) => {
+          const fields = [r.id, r.firstName, r.lastName, r.department, r.college, r.logDate, r.logTime]
+          return fields.some((f) => String(f ?? "").toLowerCase().includes(q))
+        })
+      : base
+
+    const selectedLevel = yearCtx?.yearLevel ?? "all"
+    const afterYear = selectedLevel === "all"
+      ? afterSearch
+      : afterSearch.filter((r) => {
+          const raw = String(r.yearLevel ?? "").toLowerCase()
+          // Extract the first digit in the string (e.g., "1st year" → "1")
+          const m = raw.match(/[0-9]/)
+          const digit = m ? m[0] : ""
+          return digit === String(selectedLevel)
+        })
+
+    return afterYear
+  }, [rowsSource, query, section, yearCtx, useServerSide])
 
   const sorted = React.useMemo(() => {
     if (useServerSide) return displayedRows
@@ -202,8 +285,17 @@ const TableRecords = () => {
 
   return (
     <div>
-      {isError ? <div className="mb-2 text-sm text-destructive">Error: {String((errorObj as Error)?.message ?? errorObj)}</div> : null}
-      {isLoading ? <div className="mb-2 text-sm text-muted-foreground">Loading entries...</div> : null}
+      {isError ? (
+        <div className="mb-2 flex flex-col items-center">
+          <WobbleFlipLoader size={56} src="/logo3.svg" />
+          <div className="mt-2 text-sm text-destructive">Error: {String((errorObj as Error)?.message ?? errorObj)}</div>
+        </div>
+      ) : null}
+      {isLoading ? (
+        <div className="mb-2 flex justify-center">
+          <WobbleFlipLoader size={56} />
+        </div>
+      ) : null}
       <ReusableTable
         data={sorted}
         columns={mappedColumns}
@@ -211,12 +303,11 @@ const TableRecords = () => {
         showSelection
         showActions
         onEdit={(row) => {
-          // Map an entry row to the edit page initial values and navigate
           const r = row as Record<string, unknown>
-          const userId = (r['userId'] ?? r['user_id'] ?? r['id']) as string | undefined
+          const userId = String(r['userId'] ?? r['user_id'] ?? r['id'])
           const role = String(r['role'] ?? 'student')
           const userType = (role === 'faculty' ? 'faculty' : 'student') as 'student' | 'faculty'
-          const initialValues = {
+          const initialValues: StudentValues = {
             studentId: String(r['id'] ?? ''),
             firstName: String(r['firstName'] ?? ''),
             lastName: String(r['lastName'] ?? ''),
@@ -225,13 +316,48 @@ const TableRecords = () => {
             yearLevel: String(r['yearLevel'] ?? ''),
             userType,
           }
-          navigate('/edit-info', { state: { userId, initialValues } })
+          setEditData({ userId, initial: initialValues })
         }}
-        serverSide
-        totalCount={total}
-        page={page}
-        onPageChange={(p) => setPage(p)}
+         serverSide
+         totalCount={total}
+         page={page}
+         onPageChange={(p) => setPage(p)}
+        injectRoleColumn={section === 'All'}
       />
+
+      <Dialog open={!!editData} onOpenChange={(o) => !o && setEditData(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Info</DialogTitle>
+          </DialogHeader>
+          {editData && (
+             <StudentForm
+               initialValues={editData.initial}
+               submitText={updateMut.isPending ? 'Saving...' : 'Save'}
+               onSubmit={(values) => {
+                 const payload = {
+                   userId: editData.userId,
+                   idNumber: values.studentId ?? '',
+                   firstName: values.firstName ?? '',
+                   lastName: values.lastName ?? '',
+                   college: values.college,
+                   department: values.department,
+                   yearLevel: values.yearLevel,
+                   userType: values.userType,
+                 }
+                 updateMut.mutate(payload, {
+                   onSuccess: () => {
+                     toast.success('Information updated')
+                     setEditData(null)
+                     entriesQuery.refetch()
+                   },
+                   onError: () => toast.error('Update failed')
+                 })
+               }}
+             />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -12,6 +12,17 @@ export function TableFilterProvider({
     () => new Set(initialKeys ?? [])
   )
 
+  // If initialKeys prop changes (e.g., navigating to Redacted adds 'role'),
+  // merge any new keys so columns become visible without resetting user choices.
+  React.useEffect(() => {
+    if (!initialKeys || initialKeys.length === 0) return
+    setSelected((prev) => {
+      const next = new Set(prev)
+      for (const k of initialKeys) next.add(k)
+      return next
+    })
+  }, [initialKeys])
+
   const isSelected = React.useCallback((key: string) => selected.has(key), [selected])
 
   const toggle = React.useCallback((key: string, checked?: boolean) => {

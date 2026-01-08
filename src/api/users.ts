@@ -14,6 +14,16 @@ export type CreateUserPayload = {
 
 export type UpdateUserPayload = Partial<CreateUserPayload> & { userId: number | string }
 
+export async function getUsers(params?: { search?: string; page?: number; limit?: number }) {
+  const p = new URLSearchParams()
+  if (params?.search) p.append('search', params.search)
+  if (params?.page) p.append('page', String(params.page))
+  if (params?.limit) p.append('limit', String(params.limit))
+
+  const { data } = await client.get(`/users?${p.toString()}`)
+  return data
+}
+
 export async function createUser(payload: CreateUserPayload) {
   const body = {
     idNumber: payload.idNumber,

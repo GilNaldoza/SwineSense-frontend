@@ -1,5 +1,5 @@
 import './App.css'
-import RotatingMessages from './components/RotatingMessages'
+import RotatingMessages from './components/common/RotatingMessages'
 import { Link } from 'react-router-dom'
 import Welcome from './components/dashboard/welcome'
 import Logo from "@/assets/logo.svg"
