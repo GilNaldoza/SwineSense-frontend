@@ -155,12 +155,6 @@ const SignInForm: React.FC = () => {
             {loading ? "Logging in..." : "Login"}
           </Button>
 
-          <div className="text-center">
-            <a className="text-sm text-muted-foreground hover:text-primary underline" href="#">
-              Forgot Password
-            </a>
-          </div>
-
         </FieldGroup>
       </FieldSet>
     </form>

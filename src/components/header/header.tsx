@@ -9,6 +9,7 @@ import { useTableSelection } from "@/components/table/SelectionContext"
 // import { useExportAllCurrent } from "@/features/tableRecords/exportAllCurrent"
 import { Button } from "@/components/ui/button"
 import ManualAddDialog from "@/features/formUses/ManualAddDialog"
+import AdvancedFilters from "./AdvancedFilters"
 
 export default function Header() {
   const { section } = useLayout()
@@ -20,7 +21,7 @@ export default function Header() {
   const [manualOpen, setManualOpen] = React.useState(false)
 
   const derivedUserType = section === 'Students' ? 'student' : section === 'Faculties' ? 'faculty' : 'all'
-  const redactedOnly = section === 'Redacted'
+  const redactedOnly = section === 'Archive'
 
   return (
     <header className="flex w-full rounded-lg border bg-white p-4 sm:items-start sm:justify-between flex-col sm:flex-row">
@@ -39,12 +40,13 @@ export default function Header() {
 
         {/* Controls: on mobile, place Search below the buttons */}
         <div className="flex w-full gap-3 sm:flex-row sm:items-center flex-col-reverse">
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
             <SearchInput />
+            <AdvancedFilters />
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <FilterButton />
-            {section !== 'Redacted' && (
+            {section !== 'Archive' && (
               <>
                 <Button
                   onClick={() => setManualOpen(true)}

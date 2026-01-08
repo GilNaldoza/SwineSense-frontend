@@ -7,7 +7,7 @@ import { useRedactedEntries } from '@/hooks/tableRecords/useRedactedEntries'
 import { type EntryRow } from '@/api/entries'
 import WobbleFlipLoader from '@/components/ui/WobbleFlipLoader'
 
-const RedactedTable: React.FC = () => {
+const ArchiveTable: React.FC = () => {
   const { query } = useSearch()
 
   const [page, setPage] = React.useState<number>(1)
@@ -84,9 +84,10 @@ const RedactedTable: React.FC = () => {
         page={page}
         onPageChange={(p) => setPage(p)}
         injectRoleColumn
+        emptyMessage="No archived logs found."
       />
     </div>
   )
 }
 
-export default RedactedTable
+export default ArchiveTable

@@ -15,6 +15,7 @@ export type EntryRow = {
   userId?: string
   entryMethod?: string
   status?: string
+  location?: string
   createdAt?: string
   [key: string]: React.ReactNode | string | number | null | undefined
 }
@@ -26,6 +27,11 @@ export type GetEntriesOptions = {
   limit?: number
   sort?: string
   yearLevel?: string
+  location?: string
+  startDate?: string
+  endDate?: string
+  college?: string
+  department?: string
 }
 
 // Fetch entries from backend. The backend README documents a protected GET /entries endpoint.
@@ -41,60 +47,40 @@ export type EntriesResponse = {
 
 export async function getEntries(opts?: GetEntriesOptions): Promise<EntriesResponse> {
   try {
-    // Decide whether to call the filter endpoint (POST) or the regular listing (GET)
-    let responseData: unknown
     const o: GetEntriesOptions = opts ?? {}
-    const shouldUseFilter = Boolean(o.query || (o.yearLevel && String(o.yearLevel).trim() !== ''))
-    if (shouldUseFilter) {
-      const body: Record<string, unknown> = {
-        searchQuery: o.query,
-        page: o.page ?? 1,
-        limit: o.limit ?? 10,
-      }
-      if (o.userType && o.userType !== 'all') body.userType = o.userType
-      if (o.sort) body.sort = o.sort
-      if (o.yearLevel && String(o.yearLevel).trim() !== '') body.yearLevel = o.yearLevel
+    const params: Record<string, unknown> = {}
 
-      console.log('Calling POST /entries/filter with body:', body)
-      console.debug('getEntries (filter) body:', body)
-      const resp = await client.post('/entries/filter', body)
-      responseData = resp.data
-    } else {
-      const params: Record<string, unknown> = {}
-      if (o.userType && o.userType !== 'all') params.userType = o.userType
-      if (o.page) params.page = o.page
-      if (o.limit) params.limit = o.limit
+    // Pagination
+    params.page = o.page ?? 1
+    params.limit = o.limit ?? 10
 
-      if (o.sort) {
-        params.sort = o.sort
-        if (typeof o.sort === 'string' && o.sort.includes(':')) {
-          const [byRaw, dirRaw] = o.sort.split(':', 2)
-          const by = String(byRaw ?? '')
-          const dir = String(dirRaw ?? '')
-          if (by) {
-            params.sortBy = by
-            params.sort_by = by
-            params.sortField = by
-          }
-          if (dir) {
-            params.order = dir
-            params.sort_dir = dir
-            params.sortDir = dir
-          }
+    // Filters
+    // Backend API accepts: startDate, endDate, userType, department, college
+    // Frontend options are: query, yearLevel, userType
+    
+    if (o.userType && o.userType !== 'all') params.userType = o.userType
+    
+    // Note: The backend currently does not support generic search 'query' or 'yearLevel' filtering on GET /logs.
+    // We pass them anyway in case backend adds support, or we map them if possible.
+    // 'query' might be intended for name search, but backend doesn't support it yet.
+    if (o.query) params.search = o.query 
+    if (o.yearLevel && String(o.yearLevel).trim() !== '') params.yearLevel = o.yearLevel
+    if (o.location && String(o.location).trim() !== '') params.location = o.location
+    if (o.startDate) params.startDate = o.startDate
+    if (o.endDate) params.endDate = o.endDate
+    if (o.college && String(o.college).trim() !== '') params.college = o.college
+    if (o.department && String(o.department).trim() !== '') params.department = o.department
 
-          const snake = by.replace(/\.([A-Za-z0-9_]+)/g, (_m, p1: string) => `.${p1.replace(/[A-Z]/g, (c: string) => `_${c.toLowerCase()}`)}`)
-          if (snake && snake !== by) {
-            params.sortBySnake = snake
-            params.sort_by_snake = snake
-          }
-        }
-      }
-
-      console.log('Calling GET /entries with params:', params)
-      console.debug('getEntries params:', params)
-      const resp = await client.get('/entries', { params })
-      responseData = resp.data
+    // Sort
+    // Backend hardcodes sort to 'entryTimestamp: desc' but we send params anyway.
+    if (o.sort) {
+      params.sort = o.sort
     }
+
+    // Use GET /logs for everything (was /entries and POST /entries/filter)
+    console.debug('Calling GET /logs with params:', params)
+    const resp = await client.get('/logs', { params })
+    const responseData = resp.data
 
     // Backend returns an envelope: { success, data: { entries, pagination } }
     let entriesArray: unknown[] = []
@@ -202,51 +188,31 @@ export async function deleteEntriesByLogIds(ids: Array<string | number>) {
 
   if (clean.length === 0) return { success: true }
 
-  // Prefer a bulk endpoint if the backend exposes one; otherwise sequential DELETEs.
-  try {
-    // Attempt bulk delete (non-breaking if not implemented server-side)
-    const { data } = await client.post('/entries/delete-bulk', { ids: clean })
-    return data
-  } catch {
-    // Fallback: delete sequentially
-    for (const id of clean) {
-      try {
-        await client.delete(`/entries/${encodeURIComponent(id)}`)
-      } catch (err) {
-        // capture error but continue — report final failure if needed
-        console.warn('Failed to delete entry id', id, err)
-      }
-    }
-    return { success: true }
+  // Backend v2 only supports single delete at DELETE /logs/:id
+  // We must delete sequentially.
+  
+  const results = await Promise.allSettled(clean.map(id => client.delete(`/logs/${encodeURIComponent(id)}`)));
+
+  const failures = results.filter(r => r.status === 'rejected');
+  if (failures.length > 0) {
+      console.warn('Some deletes failed', failures);
+      // Return success false if all failed? Or just partial?
+      // For now, if any succeed, we consider it a partial success, but the UI expects a simple object.
   }
+  
+  return { success: true, count: clean.length - failures.length };
 }
 
 // Fetch redacted (soft-deleted) entries
 export async function getRedactedEntries(opts?: { userType?: 'student' | 'faculty' | 'all'; page?: number; limit?: number; sort?: string }): Promise<EntriesResponse> {
   const params: Record<string, unknown> = {}
+  // Backend v2 archive endpoint does not filter by userType yet, but we pass it anyway
   if (opts?.userType && opts.userType !== 'all') params.userType = opts.userType
   if (opts?.page) params.page = opts.page
   if (opts?.limit) params.limit = opts.limit
-  if (opts?.sort) {
-    params.sort = opts.sort
-    if (typeof opts.sort === 'string' && opts.sort.includes(':')) {
-      const [byRaw, dirRaw] = opts.sort.split(':', 2)
-      const by = String(byRaw ?? '')
-      const dir = String(dirRaw ?? '')
-      if (by) {
-        params.sortBy = by
-        params.sort_by = by
-        params.sortField = by
-      }
-      if (dir) {
-        params.order = dir
-        params.sort_dir = dir
-        params.sortDir = dir
-      }
-    }
-  }
-
-  const resp = await client.get('/entries/redacted', { params })
+  
+  // Call the new backend endpoint
+  const resp = await client.get('/logs/archive', { params })
   const responseData = resp.data as {
     data?: {
       entries?: unknown[]

@@ -1,7 +1,7 @@
 
 import * as React from "react"
 
-export type SectionKey = "All" | "Students" | "Faculties" | "Status" | "Analytics" | "Redacted"
+export type SectionKey = "All" | "Students" | "Faculties" | "Status" | "Analytics" | "Archive" | "Staff"
 
 type LayoutContextType = {
   section: SectionKey
@@ -14,7 +14,7 @@ export const LayoutProvider: React.FC<{ children?: React.ReactNode }> = ({ child
   const [section, setSectionState] = React.useState<SectionKey>(() => {
     try {
       const saved = localStorage.getItem('lens:section') as SectionKey | null
-      if (saved === 'All' || saved === 'Students' || saved === 'Faculties' || saved === 'Status' || saved === 'Analytics' || saved === 'Redacted') {
+      if (saved === 'All' || saved === 'Students' || saved === 'Faculties' || saved === 'Status' || saved === 'Analytics' || saved === 'Archive' || saved === 'Staff') {
         return saved
       }
     } catch {

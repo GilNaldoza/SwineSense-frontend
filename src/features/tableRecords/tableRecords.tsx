@@ -7,14 +7,19 @@ import { useLayout } from "@/components/layout/useLayout"
 import { type SortOption, useSort } from "@/components/table/sortStore"
 import { useSearch } from "@/components/table/searchStore"
 import { useOptionalYearLevel } from "@/components/table/yearLevelStore"
+import { useLocationFilter } from "@/components/table/LocationContext"
+import { useDateRangeFilter } from "@/components/table/DateRangeContext"
+import { useDepartmentCollegeFilter } from "@/components/table/DepartmentCollegeContext"
 import { type EntryRow } from "@/api/entries"
 import { useEntries } from "@/hooks/tableRecords/useEntries"
 import { deleteEntriesByLogIds } from "@/api/entries"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useTableSelection } from "@/components/table/SelectionContext"
 import { toast } from "sonner"
-import { useLogStream } from "@/hooks/useLogStream"
 import WobbleFlipLoader from "@/components/ui/WobbleFlipLoader"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import StudentForm, { type StudentValues } from "@/components/form/formComponent"
+import { useUpdateUser } from "@/hooks/form/useUpdateUser"
 
 type Row = {
   id: string
@@ -76,6 +81,9 @@ const TableRecords = () => {
   const { sort } = useSort()
   const { query } = useSearch()
   const yearCtx = useOptionalYearLevel()
+  const { location: locationFilter } = useLocationFilter()
+  const { startDate, endDate } = useDateRangeFilter()
+  const { college, department } = useDepartmentCollegeFilter()
 
   const { section } = useLayout()
 
@@ -100,7 +108,9 @@ const TableRecords = () => {
   const initialFilterKeyRef = React.useRef<string | null>(null)
 
 
-  // Map UI sort option to backend sort parameter
+  const [editData, setEditData] = React.useState<{userId: string, initial: StudentValues} | null>(null)
+  const updateMut = useUpdateUser()
+
   const mapSortToBackend = React.useCallback((s: SortOption | undefined) => {
     switch (s) {
       case "date_desc":
@@ -125,7 +135,19 @@ const TableRecords = () => {
   const backendSort = mapSortToBackend(sort)
   const userType = section === "Students" ? "student" : section === "Faculties" ? "faculty" : "all"
   const selectedYear = (yearCtx?.yearLevel && yearCtx.yearLevel !== 'all') ? String(yearCtx.yearLevel) : undefined
-  const entriesQuery = useEntries({ userType, query: String(query || "") || undefined, limit: 10, page, sort: backendSort, yearLevel: selectedYear })
+  const entriesQuery = useEntries({ 
+    userType, 
+    query: String(query || "") || undefined, 
+    limit: 10, 
+    page, 
+    sort: backendSort, 
+    yearLevel: selectedYear,
+    location: locationFilter || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    college: college || undefined,
+    department: department || undefined
+  })
 
   const isLoading = entriesQuery.isLoading
   const isError = entriesQuery.isError
@@ -171,8 +193,8 @@ const TableRecords = () => {
     return mockRows as unknown as EntryRow[]
   }, [data, isLoading, isError])
 
-  // Live updates: subscribe to SSE and refresh queries on new logs
-  useLogStream(true)
+  // Live updates handled internally by useEntries refetchInterval
+  // useLogStream(true) 
 
   // When using server-side fetching, the backend returns already-filtered and sorted rows.
   // Avoid applying client-side filter/sort in that case. This keeps behavior consistent with
@@ -281,12 +303,11 @@ const TableRecords = () => {
         showSelection
         showActions
         onEdit={(row) => {
-          // Map an entry row to the edit page initial values and navigate
           const r = row as Record<string, unknown>
-          const userId = (r['userId'] ?? r['user_id'] ?? r['id']) as string | undefined
+          const userId = String(r['userId'] ?? r['user_id'] ?? r['id'])
           const role = String(r['role'] ?? 'student')
           const userType = (role === 'faculty' ? 'faculty' : 'student') as 'student' | 'faculty'
-          const initialValues = {
+          const initialValues: StudentValues = {
             studentId: String(r['id'] ?? ''),
             firstName: String(r['firstName'] ?? ''),
             lastName: String(r['lastName'] ?? ''),
@@ -295,7 +316,7 @@ const TableRecords = () => {
             yearLevel: String(r['yearLevel'] ?? ''),
             userType,
           }
-          navigate('/edit-info', { state: { userId, initialValues, page } })
+          setEditData({ userId, initial: initialValues })
         }}
          serverSide
          totalCount={total}
@@ -303,6 +324,40 @@ const TableRecords = () => {
          onPageChange={(p) => setPage(p)}
         injectRoleColumn={section === 'All'}
       />
+
+      <Dialog open={!!editData} onOpenChange={(o) => !o && setEditData(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Info</DialogTitle>
+          </DialogHeader>
+          {editData && (
+             <StudentForm
+               initialValues={editData.initial}
+               submitText={updateMut.isPending ? 'Saving...' : 'Save'}
+               onSubmit={(values) => {
+                 const payload = {
+                   userId: editData.userId,
+                   idNumber: values.studentId ?? '',
+                   firstName: values.firstName ?? '',
+                   lastName: values.lastName ?? '',
+                   college: values.college,
+                   department: values.department,
+                   yearLevel: values.yearLevel,
+                   userType: values.userType,
+                 }
+                 updateMut.mutate(payload, {
+                   onSuccess: () => {
+                     toast.success('Information updated')
+                     setEditData(null)
+                     entriesQuery.refetch()
+                   },
+                   onError: () => toast.error('Update failed')
+                 })
+               }}
+             />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

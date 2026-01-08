@@ -71,6 +71,7 @@ type ReusableTableProps = {
   onPageChange?: (page: number) => void
   // Optional: inject a Role column (used by Redacted page only)
   injectRoleColumn?: boolean
+  emptyMessage?: string
 }
 
 const ReusableTable2: React.FC<ReusableTableProps> = ({
@@ -85,6 +86,7 @@ const ReusableTable2: React.FC<ReusableTableProps> = ({
   page,
   onPageChange,
   injectRoleColumn = false,
+  emptyMessage = "No results.",
 }) => {
   const [selected, setSelected] = React.useState<Record<string, boolean>>({})
   const [localPage, setLocalPage] = React.useState(1)
@@ -246,32 +248,43 @@ const ReusableTable2: React.FC<ReusableTableProps> = ({
           </TableHeader>
 
           <TableBody>
-            {pageRows.map((row, i) => {
-              const rowKey = getRowKey(row, i)
-              return (
-                <TableRow key={String(rowKey)} data-state={selected[String(rowKey)] ? "selected" : ""}>
-                  {showSelection ? (
-                    <TableCell className="w-12">
-                      <input aria-label={`Select ${String(row.id)}`} type="checkbox" checked={!!selected[String(rowKey)]} onChange={() => toggleRow(String(rowKey))} className="h-4 w-4 rounded border-gray-300 text-primary accent-[#1D398A]" />
-                    </TableCell>
-                  ) : null}
+            {pageRows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={visibleColumns.length + (showSelection ? 1 : 0) + (showActions ? 1 : 0)}
+                  className="h-24 text-center"
+                >
+                  {emptyMessage}
+                </TableCell>
+              </TableRow>
+            ) : (
+              pageRows.map((row, i) => {
+                const rowKey = getRowKey(row, i)
+                return (
+                  <TableRow key={String(rowKey)} data-state={selected[String(rowKey)] ? "selected" : ""}>
+                    {showSelection ? (
+                      <TableCell className="w-12">
+                        <input aria-label={`Select ${String(row.id)}`} type="checkbox" checked={!!selected[String(rowKey)]} onChange={() => toggleRow(String(rowKey))} className="h-4 w-4 rounded border-gray-300 text-primary accent-[#1D398A]" />
+                      </TableCell>
+                    ) : null}
 
-                  {visibleColumns.map((col) => (
-                    <TableCell key={col.key} className={col.className}>
-                      {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
-                    </TableCell>
-                  ))}
+                    {visibleColumns.map((col) => (
+                      <TableCell key={col.key} className={col.className}>
+                        {col.render ? col.render(row) : (row[col.key] as React.ReactNode)}
+                      </TableCell>
+                    ))}
 
-                  {showActions ? (
-                    <TableCell className="w-12 text-right">
-                      <Button variant="ghost" size="icon" aria-label="Edit row" onClick={() => onEdit && onEdit(row)}>
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              )
-            })}
+                    {showActions ? (
+                      <TableCell className="w-12 text-right">
+                        <Button variant="ghost" size="icon" aria-label="Edit row" onClick={() => onEdit && onEdit(row)}>
+                          <PencilIcon className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                )
+              })
+            )}
           </TableBody>
 
           <TableCaption>

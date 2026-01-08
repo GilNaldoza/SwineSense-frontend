@@ -26,6 +26,15 @@ export const columns: Column[] = [
   { key: "college", header: "College", className: "max-w-[240px] truncate" },
   { key: "yearLevel", header: "Year Level", className: "text-sm" },
   { key: "entryMethod", header: "Method", className: "text-sm" },
+  {
+    key: "staff",
+    header: "Entry By",
+    className: "text-sm text-muted-foreground",
+    render: (r: unknown) => {
+      const row = r as { staff?: { username?: string }; nodeId?: string }
+      return row.staff?.username || row.nodeId || "Auto"
+    },
+  },
   { key: "logDate", header: "Log Date" },
   { key: "logTime", header: "Log Time" },
 ]

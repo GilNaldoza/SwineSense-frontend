@@ -83,6 +83,7 @@ export default function ExportDialog({ open, onOpenChange, userType = 'all', red
   const [college, setCollege] = React.useState<string>('')
   const [department, setDepartment] = React.useState<string>('')
   const [yearLevel, setYearLevel] = React.useState<string>('')
+  const [location, setLocation] = React.useState<string>('')
 
   const deptOptions = React.useMemo(() => {
     if (!college) return [] as string[]
@@ -119,10 +120,11 @@ export default function ExportDialog({ open, onOpenChange, userType = 'all', red
       }
       if (college) params.college = college
       if (department) params.department = department
+      if (location) params.location = location
       const ylDigit = yearLabelToDigit(yearLevel)
       if (ylDigit) params.yearLevel = ylDigit
 
-      const resp = await client.get('/entries/export', { params, responseType: 'blob' })
+      const resp = await client.get('/logs/export', { params, responseType: 'blob' })
       const blob = resp.data as Blob
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -145,6 +147,7 @@ export default function ExportDialog({ open, onOpenChange, userType = 'all', red
         dateLabel = s === e ? s : `${s}-${e}`
       }
       const parts = [scope, dateLabel]
+      if (location) parts.push(slug(location))
       if (college) parts.push(slug(college))
       if (department) parts.push(slug(department))
       const filename = `${parts.join('-')}.csv`
@@ -207,6 +210,19 @@ export default function ExportDialog({ open, onOpenChange, userType = 'all', red
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <div>
+              <label className="text-sm font-medium">Location</label>
+              <Select value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1">
+                <option value="">All Locations</option>
+                <option value="Main Library">Main Library</option>
+                <option value="Graduate Library">Graduate Library</option>
+                <option value="Electronic Library">Electronic Library</option>
+                <option value="CEA Library">CEA Library</option>
+                <option value="CSM Library">CSM Library</option>
+                <option value="CITC Library">CITC Library</option>
+                <option value="COT Library">COT Library</option>
+              </Select>
+            </div>
             <div>
               <label className="text-sm font-medium">College</label>
               <Select value={college} onChange={(e) => setCollege(e.target.value)} className="mt-1">
@@ -216,7 +232,10 @@ export default function ExportDialog({ open, onOpenChange, userType = 'all', red
                 ))}
               </Select>
             </div>
-            <div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <div>
               <label className="text-sm font-medium">Department</label>
               <Select value={department} onChange={(e) => setDepartment(e.target.value)} className="mt-1">
                 <option value="">All</option>
@@ -224,17 +243,16 @@ export default function ExportDialog({ open, onOpenChange, userType = 'all', red
                   <option key={d} value={d}>{d}</option>
                 ))}
               </Select>
+            </div>         
+            <div>
+              <label className="text-sm font-medium">Year Level</label>
+              <Select value={yearLevel} onChange={(e) => setYearLevel(e.target.value)} className="mt-1">
+                <option value="">All</option>
+                {yearLevels.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </Select>
             </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Year Level</label>
-            <Select value={yearLevel} onChange={(e) => setYearLevel(e.target.value)} className="mt-1">
-              <option value="">All</option>
-              {yearLevels.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </Select>
           </div>
         </div>
 

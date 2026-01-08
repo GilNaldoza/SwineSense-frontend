@@ -27,25 +27,18 @@ function mapSortToBackend(s: SortOption | undefined): string | undefined {
 async function fetchPage(params: { userType?: string; query?: string; page: number; limit: number; sort?: string }): Promise<EntriesResponse> {
   // Reuse server API with same normalization path used by getEntries, but call endpoints directly for efficiency
   const { userType, query, page, limit, sort } = params
-  if (query && query.trim() !== '') {
-    const body: Record<string, unknown> = { searchQuery: query, page, limit }
-    if (userType && userType !== 'all') body.userType = userType
-    if (sort) body.sort = sort
-    const resp = await client.post('/entries/filter', body)
-    const data = resp.data
-    const entries = Array.isArray(data?.data?.entries) ? data.data.entries : Array.isArray(data?.entries) ? data.entries : []
-    const pagination = typeof data?.data?.pagination === 'object' ? data.data.pagination : data?.pagination
-    return { entries, pagination }
-  } else {
-    const paramsObj: Record<string, unknown> = { page, limit }
-    if (userType && userType !== 'all') paramsObj.userType = userType
-    if (sort) paramsObj.sort = sort
-    const resp = await client.get('/entries', { params: paramsObj })
-    const data = resp.data
-    const entries = Array.isArray(data?.data?.entries) ? data.data.entries : Array.isArray(data?.entries) ? data.entries : []
-    const pagination = typeof data?.data?.pagination === 'object' ? data.data.pagination : data?.pagination
-    return { entries, pagination }
-  }
+  
+  const paramsObj: Record<string, unknown> = { page, limit }
+  if (userType && userType !== 'all') paramsObj.userType = userType
+  if (sort) paramsObj.sort = sort
+  if (query) paramsObj.search = query // Backend v2 might not support search yet
+
+  const resp = await client.get('/logs', { params: paramsObj })
+  
+  const data = resp.data
+  const entries = Array.isArray(data?.data?.entries) ? data.data.entries : Array.isArray(data?.entries) ? data.entries : []
+  const pagination = typeof data?.data?.pagination === 'object' ? data.data.pagination : data?.pagination
+  return { entries, pagination }
 }
 
 function toCsv(rows: Array<Record<string, unknown>>): string {

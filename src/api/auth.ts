@@ -18,8 +18,16 @@ export async function login(username: string, password: string): Promise<LoginRe
   try {
     console.log('Calling POST /auth/login with body:', { username, password: '[REDACTED]' })
     const { data } = await client.post("/auth/login", { username, password })
-    // Backend returns { success, message, data: { admin, accessToken, refreshToken } }
-    // Normalize to return the inner `data` object when present so callers get tokens directly.
+    // Backend returns { token, user }
+    // Frontend expects { accessToken, admin }
+    if (data && data.token) {
+        return {
+            accessToken: data.token,
+            admin: data.user
+        }
+    }
+
+    // Legacy or other format support
     if (data && typeof data === 'object' && 'data' in data) {
       const envelope = data as ApiEnvelope<LoginResponse>
       
