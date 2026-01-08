@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# LENS Admin Dashboard (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The centralized administrative interface for the Library Entry Management System (LENS). This web application allows library staff and administrators to monitor entries, manage users, view analytics, and export reports.
 
-Currently, two official plugins are available:
+## 🛠️ Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Framework:** React 18 (Vite)
+- **Language:** TypeScript
+- **Styling:** TailwindCSS
+- **Components:** ShadCN UI (built on Radix Primitives)
+- **State/Fetching:** TanStack Query (React Query)
+- **Routing:** React Router DOM
+- **Icons:** Lucide React
 
-## React Compiler
+## ✨ Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Dashboard & Analytics:** Real-time visualization of library traffic, peak hours, and user demographics.
+- **entry Records:**
+  - **Live Table:** View entry logs as they happen.
+  - **Advanced Filtering:** Filter by **Location** (e.g., Main, Graduate), **Date Range**, **College**, **Department**, and **User Type**.
+  - **Smart Search:** Quick lookup by Name or ID Number.
+- **Staff Management:**
+  - Create and manage staff accounts.
+  - Role-based permissions (Super Admin vs. Staff).
+- **Exports:**
+  - Generate comprehensive CSV reports.
+  - Includes detailed metadata: Staff Name, Entry Node ID, and Location.
+- **Responsive Design:** Optimized for both desktop and mobile views.
 
-## Expanding the ESLint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js (v18+)
+- NPM
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/LENS-Library-Entry-Management-System/LENS-frontend-v2.git
+    cd LENS-frontend-v2
+    ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3.  **Environment Setup:**
+    Create a `.env` file (or use `.env.local`):
+    ```env
+    VITE_API_BASE_URL="http://localhost:3000/api"
+    ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+    The app will start at `http://localhost:5173`.
+
+## 📂 Project Structure
+
+- `src/api`: Axios client and API handler functions.
+- `src/components`:
+  - `ui`: Reusable ShadCN components (buttons, inputs, dialogs).
+  - `header`, `sidebar`: Layout components.
+  - `table`: Data tables and filter contexts.
+- `src/features`: Feature-specific logic (e.g., `tableRecords`, `formUses`).
+- `src/hooks`: Custom React hooks (e.g., `useEntries`, `useLogStream`).
+- `src/pages`: Main page views (`records`, `analytics`, `staffManagement`).
+- `src/lib`: Utility functions and constants (`colleges.ts`).
+
+## 🔄 Integration
+
+This frontend connects to `LENS-backend-v2`. Ensure the backend server is running and the `VITE_API_BASE_URL` is correctly configured.
