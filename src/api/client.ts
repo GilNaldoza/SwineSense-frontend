@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000/api";
 console.log("Vercel Bypass Token:", import.meta.env.VITE_VERCEL_BYPASS_TOKEN);
 
 const client = axios.create({

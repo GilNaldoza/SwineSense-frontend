@@ -49,16 +49,16 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #1D398A;
-  --primary-foreground: #17357D;
+  --primary: #EC4899;
+  --primary-foreground: #ffffff;
   
   /* Solid colors for regular use */
-  --secondary: #0575E6;
+  --secondary: #F472B6;
   --secondary-foreground: #ffffff;
   
   /* Gradients for special use */
-  --gradient-primary: linear-gradient(to bottom, #0575E6 0%, #02298A 85%, #021B79 100%);
-  --gradient-primary-reverse: linear-gradient(to top, #0575E6 0%, #02298A 85%, #021B79 100%);
+  --gradient-primary: linear-gradient(to bottom, #F472B6 0%, #EC4899 50%, #DB2777 100%);
+  --gradient-primary-reverse: linear-gradient(to top, #F472B6 0%, #EC4899 50%, #DB2777 100%);
   
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
@@ -90,9 +90,9 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #1D398A;
-  --primary-foreground: #17357D;
-  --secondary: #0575E6;
+  --primary: #EC4899;
+  --primary-foreground: #ffffff;
+  --secondary: #F472B6;
   --secondary-foreground: #ffffff;
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
@@ -138,6 +138,33 @@
 .btn-gradient {
   background: var(--gradient-primary);
   color: white;
+}
+
+/* SwineSense pink gradient utilities */
+.gradient-pink {
+  background: linear-gradient(to bottom right, #f472b6 0%, #ec4899 50%, #db2777 100%);
+}
+
+.gradient-pink-light {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:scale-105;
+}
+
+/* Status badges */
+.badge-healthy {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-at-risk {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.badge-sick {
+  @apply bg-red-100 text-red-800;
 }
 
 @layer base {

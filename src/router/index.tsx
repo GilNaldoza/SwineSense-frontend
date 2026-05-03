@@ -1,7 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from '../layout'
 import App from '../App'
-import Records from '../pages/records'
+import Dashboard from '../pages/dashboard'
+import RecordsPage from '../pages/recordsList'
+import PigProfile from '../pages/pigProfile'
+import PigManagementPage from '../pages/pigManagementNew'
+import AnalyticsPage from '../pages/analyticsPage'
+import StaffManagementPage from '../pages/staffPage'
+import SettingsPage from '../pages/settingsPage'
 import SignUp from '@/pages/signUp'
 import SignIn from '@/pages/signin'
 import LoadingSamples from '@/pages/loadingSamples'
@@ -12,7 +18,13 @@ export default function Router() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<App />} />
-          <Route path="records" element={<Records />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="records" element={<RecordsPage />} />
+          <Route path="pig/:id" element={<PigProfile />} />
+          <Route path="pig-management" element={<PigManagementPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="staff" element={<StaffManagementPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="sign-up" element={<SignUp />} />
           <Route path="sign-in" element={<SignIn />} />
           <Route path="loading-samples" element={<LoadingSamples />} />
@@ -21,3 +33,6 @@ export default function Router() {
     </BrowserRouter>
   )
 }
+
+
+
