@@ -9,10 +9,10 @@ import { Eye, EyeOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const SignInForm: React.FC = () => {
-  const [userId, setUserId] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<{ userId?: string; password?: string } | null>(null)
+  const [errors, setErrors] = useState<{ email?: string; password?: string } | null>(null)
 
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -22,8 +22,9 @@ const SignInForm: React.FC = () => {
     e.preventDefault()
     setServerError(null)
 
-    const newErrors: { userId?: string; password?: string } = {}
-    if (!userId.trim()) newErrors.userId = "User ID is required"
+    const newErrors: { email?: string; password?: string } = {}
+    if (!email.trim()) newErrors.email = "Email is required"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Email is invalid"
     if (!password.trim()) newErrors.password = "Password is required"
 
     setErrors(Object.keys(newErrors).length ? newErrors : null)
@@ -31,7 +32,7 @@ const SignInForm: React.FC = () => {
 
     try {
       setLoading(true)
-      const data = await login(userId, password)
+      const data = await login(email, password)
 
       const { accessToken, refreshToken, admin } = data || {}
       if (accessToken) localStorage.setItem("accessToken", accessToken)
@@ -50,9 +51,9 @@ const SignInForm: React.FC = () => {
     }
   }
 
-  const handleUserIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserId(e.target.value)
-    setErrors((prev) => (prev ? { ...prev, userId: undefined } : null))
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value)
+    setErrors((prev) => (prev ? { ...prev, email: undefined } : null))
   }
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,27 +72,28 @@ const SignInForm: React.FC = () => {
       <FieldSet>
         <FieldGroup>
 
-          {/* USER ID */}
-          <Field data-invalid={!!errors?.userId}>
+          {/* EMAIL */}
+          <Field data-invalid={!!errors?.email}>
             <div className="relative">
-              {errors?.userId && (
+              {errors?.email && (
                 <div className="absolute -top-2 left-4 z-10 bg-red-500 text-white text-xs px-3 py-1.5 rounded shadow-lg">
                   <div className="absolute -bottom-1 left-4 w-2 h-2 bg-red-500 transform rotate-45"></div>
-                  {errors.userId}
+                  {errors.email}
                 </div>
               )}
 
-              <div className={cn(wrapperClass, errors?.userId && "border-red-500")}>
-                <span className={legendClass}>User ID</span>
+              <div className={cn(wrapperClass, errors?.email && "border-red-500")}>
+                <span className={legendClass}>Email</span>
 
                 <FieldContent>
                   <Input
-                    aria-label="User ID"
-                    name="userId"
-                    placeholder="Text Here"
-                    value={userId}
-                    onChange={handleUserIdChange}
-                    aria-invalid={!!errors?.userId}
+                    type="email"
+                    aria-label="Email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={handleEmailChange}
+                    aria-invalid={!!errors?.email}
                     className="border-0 shadow-none p-2 focus:ring-0 focus-visible:ring-0"
                   />
                 </FieldContent>

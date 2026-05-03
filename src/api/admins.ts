@@ -11,11 +11,11 @@ export type Admin = {
 }
 
 export type CreateAdminPayload = {
-    username: string
+    username?: string
     password: string
     fullName: string
     email: string
-    role: 'super_admin' | 'staff'
+    role?: 'super_admin' | 'staff'
 }
 
 export async function getAdmins() {
