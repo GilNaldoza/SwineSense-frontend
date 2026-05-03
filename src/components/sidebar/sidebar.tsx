@@ -6,11 +6,11 @@ import logo2 from "@/assets/logo2.svg"
 import intersect from "@/assets/Intersect.svg"
 
 import React from "react"
-import { LayoutDashboard, Users, Building2, LogOut, LineChart, Trash2, Shield } from "lucide-react"
+import { LayoutDashboard, Users, Building2, LogOut, LineChart, Trash2, Shield, PiggyBank } from "lucide-react"
 import type { JSX } from "react"
 import { useNavigate } from "react-router-dom"
 
-type ItemType = { key: SectionKey; label: string; icon: JSX.Element; restricted?: boolean }
+type ItemType = { key?: SectionKey; label: string; icon: JSX.Element; restricted?: boolean; nav?: boolean; path?: string }
 
 const items: ItemType[] = [
   { key: "All", label: "All", icon: <LayoutDashboard size={18} /> },
@@ -19,6 +19,7 @@ const items: ItemType[] = [
   { key: "Analytics", label: "Analytics", icon: <LineChart size={18} /> },
   { key: "Archive", label: "Archive", icon: <Trash2 size={18} />, restricted: true },
   { key: "Staff", label: "Staff", icon: <Shield size={18} />, restricted: true },
+  { label: "🐷 Pig Management", icon: <PiggyBank size={18} />, nav: true, path: "/pig-management" },
 ]
 
 export default function Sidebar() {
@@ -74,14 +75,14 @@ export default function Sidebar() {
         {items.map((item) => {
           if (item.restricted && userRole !== 'super_admin') return null
 
-          const isActive = section === item.key
+          const isActive = item.key ? section === item.key : false
           const isArchive = item.key === "Archive"
           const isRestricted = item.key === "Staff" || item.key === "Archive"
 
           return (
             <button
-              key={item.key}
-              onClick={() => setSection(item.key)}
+              key={item.label}
+              onClick={() => item.nav ? navigate(item.path!) : setSection(item.key!)}
               className={`
                 flex items-center lg:justify-start justify-center gap-0 lg:gap-3 px-2 lg:px-4 py-2 rounded-lg text-sm
                 transition
@@ -92,9 +93,10 @@ export default function Sidebar() {
                     : isActive
                         ? "bg-blue-50 text-blue-600 font-semibold"
                         : "text-gray-700"}
+                ${item.nav ? "hover:bg-green-50 text-green-600" : ""}
               `}
             >
-              <span className={`${isRestricted ? (isArchive ? "text-red-600" : "text-purple-600") : isActive ? "text-blue-600" : "text-gray-500"}`}>
+              <span className={`${isRestricted ? (isArchive ? "text-red-600" : "text-purple-600") : isActive ? "text-blue-600" : "text-gray-500"} ${item.nav ? "text-green-600" : ""}`}>
                 {item.icon}
               </span>
               <span className="hidden lg:inline">{item.label}</span>
