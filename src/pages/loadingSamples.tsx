@@ -36,15 +36,15 @@ export default function LoadingSamples() {
 
         <div className="ls-row">
           <div className="ls-item">
-            <img src="/logo3.svg" alt="Logo flip Y" className="flip-y" />
+            <img src="/SwineSense_PinkLogo_NoBG.svg" alt="Logo flip Y" className="flip-y" />
             <span>Vertical Flip<br/>(Ballerina)</span>
           </div>
           <div className="ls-item">
-            <img src="/logo2.svg" alt="Logo2 flip Y" className="flip-y" />
+            <img src="/SwineSense_WhiteLogo_NoBG.svg" alt="Logo2 flip Y" className="flip-y" />
             <span>Flip Y</span>
           </div>
           <div className="ls-item">
-            <img src="/logo3.svg" alt="Logo3 flip X" className="flip-x" />
+            <img src="/SwineSense_PinkLogo_NoBG.svg" alt="Logo3 flip X" className="flip-x" />
             <span>Flip X</span>
           </div>
         </div>
@@ -53,15 +53,15 @@ export default function LoadingSamples() {
 
         <div className="ls-row">
           <div className="ls-item">
-            <img src="/logo3.svg" alt="Logo fast" className="flip-fast" />
+            <img src="/SwineSense_PinkLogo_NoBG.svg" alt="Logo fast" className="flip-fast" />
             <span>Fast Flip</span>
           </div>
           <div className="ls-item">
-            <img src="/logo2.svg" alt="Logo2 slow" className="flip-slow" />
+            <img src="/SwineSense_WhiteLogo_NoBG.svg" alt="Logo2 slow" className="flip-slow" />
             <span>Slow Smooth</span>
           </div>
           <div className="ls-item">
-            <img src="/logo3.svg" alt="Logo3 diagonal" className="flip-diagonal" />
+            <img src="/SwineSense_PinkLogo_NoBG.svg" alt="Logo3 diagonal" className="flip-diagonal" />
             <span>Diagonal Flip</span>
           </div>
         </div>
@@ -70,15 +70,15 @@ export default function LoadingSamples() {
 
         <div className="ls-row">
           <div className="ls-item">
-            <img src="/logo3.svg" alt="Logo wobble" className="flip-wobble" />
+            <img src="/SwineSense_PinkLogo_NoBG.svg" alt="Logo wobble" className="flip-wobble" />
             <span>Wobble Flip<br/>(with scale)</span>
           </div>
           <div className="ls-item">
-            <img src="/logo2.svg" alt="Logo2 flip Y" className="flip-y" />
+            <img src="/SwineSense_WhiteLogo_NoBG.svg" alt="Logo2 flip Y" className="flip-y" />
             <span>Flip Y</span>
           </div>
           <div className="ls-item">
-            <img src="/logo3.svg" alt="Logo3 flip Y" className="flip-y" />
+            <img src="/SwineSense_PinkLogo_NoBG.svg" alt="Logo3 flip Y" className="flip-y" />
             <span>Flip Y</span>
           </div>
         </div>

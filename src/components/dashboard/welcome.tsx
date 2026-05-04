@@ -1,4 +1,4 @@
-import LogoWhite from "@/assets/logo_white.svg"
+import LogoWhite from "@/assets/SwineSense_TextLogo_White.svg"
 import Intersect2 from "@/assets/intersect2.svg"
 import Circle from "@/assets/circle.svg"
 
@@ -28,14 +28,14 @@ export default function Welcome() {
         {/* Logo */}
         <img
           src={LogoWhite}
-          alt="LENS Logo"
+          alt="SwineSense"
           className="w-full max-w-xxl h-auto"
         />
       </div>
 
       {/* Footer */}
       <div className="absolute bottom-6 left-0 right-0 text-center text-white/40 text-sm px-4">
-        © 2025 Library Entry Notation System (LENS) | All Rights Reserved
+        © 2025 SwineSense | All Rights Reserved
       </div>
     </div>
   )

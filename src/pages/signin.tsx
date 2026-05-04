@@ -1,6 +1,6 @@
 import React from "react"
 import SignInForm from "@/features/signIn/signInForm"
-import Logo from "@/assets/logo.svg"
+import Logo from "@/assets/SwineSense_TextLogo_White.svg"
 
 const SignIn: React.FC = () => {
   return (

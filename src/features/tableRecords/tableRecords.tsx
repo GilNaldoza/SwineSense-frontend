@@ -287,7 +287,7 @@ const TableRecords = () => {
     <div>
       {isError ? (
         <div className="mb-2 flex flex-col items-center">
-          <WobbleFlipLoader size={56} src="/logo3.svg" />
+          <WobbleFlipLoader size={56} src="/SwineSense_PinkLogo_NoBG.svg" />
           <div className="mt-2 text-sm text-destructive">Error: {String((errorObj as Error)?.message ?? errorObj)}</div>
         </div>
       ) : null}

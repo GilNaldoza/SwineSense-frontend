@@ -1,8 +1,8 @@
 import { useLayout } from "@/components/layout/useLayout"
 import type { SectionKey } from "@/components/layout/LayoutContext"
 
-import logo from "@/assets/logo.svg"
-import logo2 from "@/assets/logo2.svg"
+import TextLogo from "@/assets/SwineSense_TextLogo_Pink.svg"
+import SymbolLogo from "@/assets/SwineSense_SymbolLogo_Pink.svg"
 import intersect from "@/assets/Intersect.svg"
 
 import React from "react"
@@ -58,14 +58,14 @@ export default function Sidebar() {
       <div className="mb-8 lg:mb-16 flex items-center justify-center">
         {/* Compact logo on small/medium */}
         <img
-          src={logo2}
-          alt="LENS Logo"
+          src={SymbolLogo}
+          alt="SwineSense"
           className="block lg:hidden w-8 h-8 select-none"
         />
         {/* Full logo on large+ */}
         <img
-          src={logo}
-          alt="LENS Logo"
+          src={TextLogo}
+          alt="SwineSense"
           className="hidden lg:block w-40 select-none"
         />
       </div>

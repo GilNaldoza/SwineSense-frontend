@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, FileText, Users, BarChart3, Settings, LogOut } from 'lucide-react'
-import Logo from '@/assets/logo.svg'
+import Logo from '@/assets/SwineSense_TextLogo_White.svg'
 
 const Sidebar = () => {
   const location = useLocation()

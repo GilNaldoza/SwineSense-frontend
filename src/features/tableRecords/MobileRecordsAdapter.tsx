@@ -54,7 +54,7 @@ const MobileRecordsAdapter: React.FC = () => {
     <div className="space-y-4 overflow-x-hidden">
       {isError ? (
         <div className="flex flex-col items-center">
-          <WobbleFlipLoader size={56} src="/logo3.svg" />
+          <WobbleFlipLoader size={56} src="/SwineSense_PinkLogo_NoBG.svg" />
           <div className="mt-2 text-sm text-destructive">Failed to load entries.</div>
         </div>
       ) : null}

@@ -6,7 +6,7 @@ type Props = {
   alt?: string
   title?: string
   duration?: number
-  // Optional: override logo source (defaults to /logo2.svg)
+  // Optional: override logo source (defaults to /SwineSense_PinkLogo_NoBG.svg)
   src?: string
 }
 
@@ -18,7 +18,7 @@ export default function WobbleFlipLoader({
   duration,
   src: srcProp,
 }: Props) {
-  const [src, setSrc] = useState<string>(srcProp ?? '/logo2.svg')
+  const [src, setSrc] = useState<string>(srcProp ?? '/SwineSense_PinkLogo_NoBG.svg')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [failedOnce, setFailedOnce] = useState(false)
 
@@ -31,7 +31,7 @@ export default function WobbleFlipLoader({
     if (srcProp) {
       setSrc(srcProp)
     } else {
-      setSrc('/logo2.svg')
+      setSrc('/SwineSense_PinkLogo_NoBG.svg')
     }
     setErrorMsg(null)
     setFailedOnce(false)
@@ -40,7 +40,7 @@ export default function WobbleFlipLoader({
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (!failedOnce) {
       setErrorMsg(`Failed to load: ${e.currentTarget.src}`)
-      setSrc('/logo3.svg')
+      setSrc('/SwineSense_WhiteLogo_NoBG.svg')
       setFailedOnce(true)
     } else {
       setErrorMsg(`Also failed to load fallback: ${e.currentTarget.src}`)

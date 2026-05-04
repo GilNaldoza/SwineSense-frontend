@@ -1,6 +1,6 @@
 import './App.css'
 import { Link } from 'react-router-dom'
-import Logo from "@/assets/logo.svg"
+import Logo from "@/assets/SwineSense_TextLogo_Pink.svg"
 import { Button } from './components/ui/button'
 import RotatingMessages from '@/components/common/RotatingMessages'
 
