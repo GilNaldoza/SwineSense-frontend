@@ -38,10 +38,11 @@ const SignUp = () => {
 
     try {
       setLoading(true)
+      const normalizedEmail = email.trim().toLowerCase()
       await createAdmin({
-        username: email,
-        email,
-        fullName,
+        username: normalizedEmail,
+        email: normalizedEmail,
+        fullName: fullName.trim(),
         password,
       })
       toast.success("Admin account created successfully")

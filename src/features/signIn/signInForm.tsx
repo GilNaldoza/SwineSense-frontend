@@ -41,7 +41,8 @@ const SignInForm: React.FC = () => {
 
     try {
       setLoading(true);
-      const data = await login(email, password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const data = await login(normalizedEmail, password);
 
       const { accessToken, refreshToken, admin } = data || {};
       if (accessToken) localStorage.setItem("accessToken", accessToken);
