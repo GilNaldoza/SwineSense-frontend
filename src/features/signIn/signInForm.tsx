@@ -1,86 +1,77 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "@/api/auth";
+import React, { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { login } from "@/api/auth"
 
-import {
-  Field,
-  FieldContent,
-  FieldSet,
-  FieldGroup,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Field, FieldContent, FieldSet, FieldGroup } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Eye, EyeOff } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const SignInForm: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{
-    email?: string;
-    password?: string;
-  } | null>(null);
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string } | null>(null)
 
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setServerError(null);
+    e.preventDefault()
+    setServerError(null)
 
-    const newErrors: { email?: string; password?: string } = {};
-    if (!email.trim()) newErrors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      newErrors.email = "Email is invalid";
-    if (!password.trim()) newErrors.password = "Password is required";
+    const newErrors: { email?: string; password?: string } = {}
+    if (!email.trim()) newErrors.email = "Email is required"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Email is invalid"
+    if (!password.trim()) newErrors.password = "Password is required"
 
-    setErrors(Object.keys(newErrors).length ? newErrors : null);
-    if (Object.keys(newErrors).length) return;
+    setErrors(Object.keys(newErrors).length ? newErrors : null)
+    if (Object.keys(newErrors).length) return
 
     try {
-      setLoading(true);
-      const normalizedEmail = email.trim().toLowerCase();
-      const data = await login(normalizedEmail, password);
+      setLoading(true)
+      const data = await login(email, password)
 
-      const { accessToken, refreshToken, admin } = data || {};
-      if (accessToken) localStorage.setItem("accessToken", accessToken);
-      if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-      if (admin) localStorage.setItem("profile", JSON.stringify(admin));
+      const { accessToken, refreshToken, admin } = data || {}
+      if (accessToken) localStorage.setItem("accessToken", accessToken)
+      if (refreshToken) localStorage.setItem("refreshToken", refreshToken)
+      if (admin) localStorage.setItem("profile", JSON.stringify(admin))
 
-      navigate("/records");
+      navigate("/records")
     } catch (err: unknown) {
-      let message = "Login failed";
+      let message = "Login failed"
       if (typeof err === "object" && err !== null && "message" in err) {
-        message = (err as Error).message;
+        message = (err as Error).message
       }
-      setServerError(message);
+      setServerError(message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    setErrors((prev) => (prev ? { ...prev, email: undefined } : null));
-  };
+    setEmail(e.target.value)
+    setErrors((prev) => (prev ? { ...prev, email: undefined } : null))
+  }
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
-    setErrors((prev) => (prev ? { ...prev, password: undefined } : null));
-  };
+    setPassword(e.target.value)
+    setErrors((prev) => (prev ? { ...prev, password: undefined } : null))
+  }
 
   const legendClass =
-    "absolute -top-3 left-4 bg-gray-50 px-2 text-primary font-semibold text-sm rounded";
+    "absolute -top-3 left-4 bg-gray-50 px-2 text-primary font-semibold text-sm rounded"
 
   const wrapperClass =
-    "relative border border-gray-300 rounded-md px-4 pt-4 pb-2";
+    "relative border border-gray-300 rounded-md px-4 pt-4 pb-2"
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-xl mx-auto space-y-6">
       <FieldSet>
         <FieldGroup>
+
           {/* EMAIL */}
           <Field data-invalid={!!errors?.email}>
             <div className="relative">
@@ -91,9 +82,7 @@ const SignInForm: React.FC = () => {
                 </div>
               )}
 
-              <div
-                className={cn(wrapperClass, errors?.email && "border-red-500")}
-              >
+              <div className={cn(wrapperClass, errors?.email && "border-red-500")}>
                 <span className={legendClass}>Email</span>
 
                 <FieldContent>
@@ -122,12 +111,7 @@ const SignInForm: React.FC = () => {
                 </div>
               )}
 
-              <div
-                className={cn(
-                  wrapperClass,
-                  errors?.password && "border-red-500",
-                )}
-              >
+              <div className={cn(wrapperClass, errors?.password && "border-red-500")}>
                 <span className={legendClass}>Password</span>
 
                 <FieldContent>
@@ -149,9 +133,7 @@ const SignInForm: React.FC = () => {
                       className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-transparent focus:bg-transparent active:bg-transparent"
                       variant="ghost"
                       size="icon"
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </Button>
@@ -163,9 +145,7 @@ const SignInForm: React.FC = () => {
 
           {/* LOGIN BUTTON */}
           {serverError && (
-            <div className="text-center text-sm text-red-600">
-              {serverError}
-            </div>
+            <div className="text-center text-sm text-red-600">{serverError}</div>
           )}
 
           <Button
@@ -176,10 +156,11 @@ const SignInForm: React.FC = () => {
           >
             {loading ? "Logging in..." : "Login"}
           </Button>
+
         </FieldGroup>
       </FieldSet>
     </form>
-  );
-};
+  )
+}
 
-export default SignInForm;
+export default SignInForm
