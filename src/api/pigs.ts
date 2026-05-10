@@ -58,20 +58,62 @@ export type PigDashboardStats = {
   penOverview: Array<{ pen: string; count: number; healthStatus: { healthy: number; atRisk: number; sick: number } }>
 }
 
+type BackendPigModel = {
+  id?: string;
+  pigId?: number | string;
+  pigNumber?: string;
+  rfidTag: string;
+  pigType: 'piglet' | 'sow' | 'boar' | 'gilt';
+  sire?: string | null;
+  dam?: string | null;
+  pen: string;
+  healthStatus: 'healthy' | 'at-risk' | 'sick';
+  weight?: number | null;
+  dateOfBirth: string;
+  notes?: string | null;
+  lastScanned: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Adapter to map backend Pig model to frontend PigRecord type
+ */
+const adaptPig = (p: BackendPigModel): PigRecord => ({
+  id: (p.pigId ? p.pigId.toString() : p.id) || '',
+  pigId: (p.pigNumber || p.pigId || '').toString(),
+  rfidTag: p.rfidTag,
+  pigType: p.pigType,
+  sire: p.sire || undefined,
+  dam: p.dam || undefined,
+  pen: p.pen,
+  healthStatus: p.healthStatus,
+  weight: p.weight || undefined,
+  dateOfBirth: p.dateOfBirth,
+  notes: p.notes || undefined,
+  lastScanned: p.lastScanned,
+  createdAt: p.createdAt,
+  updatedAt: p.updatedAt,
+});
+
 /**
  * Check if a pig exists by RFID tag
  */
 export async function checkPigByRfid(rfidTag: string): Promise<PigRecord | null> {
   const response = await client.get(`/api/pigs/check-rfid/${encodeURIComponent(rfidTag)}`)
-  return response.data?.pig || null
+  return response.data ? adaptPig(response.data) : null
 }
 
 /**
  * Create a new pig record
  */
 export async function createPigRecord(pigData: Omit<PigRecord, 'id' | 'lastScanned' | 'createdAt' | 'updatedAt'>): Promise<PigRecord> {
-  const response = await client.post('/api/pigs', pigData)
-  return response.data
+  const backendData = {
+    ...pigData,
+    pigNumber: pigData.pigId // map frontend pigId back to backend pigNumber
+  }
+  const response = await client.post('/api/pigs', backendData)
+  return adaptPig(response.data)
 }
 
 /**
@@ -81,8 +123,12 @@ export async function updatePigRecord(
   pigId: string,
   pigData: Partial<Omit<PigRecord, 'id' | 'lastScanned' | 'createdAt' | 'updatedAt'>>
 ): Promise<PigRecord> {
-  const response = await client.put(`/api/pigs/${pigId}`, pigData)
-  return response.data
+  const backendData = {
+    ...pigData,
+    ...(pigData.pigId && { pigNumber: pigData.pigId })
+  }
+  const response = await client.put(`/api/pigs/${pigId}`, backendData)
+  return adaptPig(response.data)
 }
 
 /**
@@ -90,7 +136,7 @@ export async function updatePigRecord(
  */
 export async function getPigById(pigId: string): Promise<PigRecord> {
   const response = await client.get(`/api/pigs/${pigId}`)
-  return response.data
+  return adaptPig(response.data)
 }
 
 /**
@@ -102,7 +148,7 @@ export async function getPigs(opts?: GetPigsOptions): Promise<PigsResponse> {
   if (opts?.pigType && opts.pigType !== 'all') params.append('pigType', opts.pigType)
   if (opts?.healthStatus && opts.healthStatus !== 'all') params.append('healthStatus', opts.healthStatus)
   if (opts?.pen) params.append('pen', opts.pen)
-  if (opts?.query) params.append('query', opts.query)
+  if (opts?.query) params.append('search', opts.query) // backend uses 'search' instead of 'query'
   if (opts?.page) params.append('page', opts.page.toString())
   if (opts?.limit) params.append('limit', opts.limit.toString())
   if (opts?.sort) params.append('sort', opts.sort)
@@ -110,7 +156,10 @@ export async function getPigs(opts?: GetPigsOptions): Promise<PigsResponse> {
   if (opts?.endDate) params.append('endDate', opts.endDate)
 
   const response = await client.get(`/api/pigs?${params.toString()}`)
-  return response.data
+  return {
+    pigs: (response.data?.data?.pigs || []).map(adaptPig),
+    pagination: response.data?.data?.pagination
+  }
 }
 
 /**
@@ -125,7 +174,44 @@ export async function getPigDashboardStats(
   if (endDate) params.append('endDate', endDate)
 
   const response = await client.get(`/api/pigs/stats/dashboard?${params.toString()}`)
-  return response.data
+  const raw = response.data
+  
+  const byType: { [key: string]: number } = {}
+  if (raw.typeStats) {
+      raw.typeStats.forEach((t: { pigType: string; _count: { pigId: number } }) => {
+          byType[t.pigType] = t._count.pigId
+      })
+  }
+
+  const healthStatus = { healthy: 0, atRisk: 0, sick: 0 }
+  if (raw.healthStats) {
+      raw.healthStats.forEach((h: { healthStatus: string; _count: { pigId: number } }) => {
+          if (h.healthStatus === 'healthy') healthStatus.healthy = h._count.pigId
+          else if (h.healthStatus === 'at-risk') healthStatus.atRisk = h._count.pigId
+          else if (h.healthStatus === 'sick') healthStatus.sick = h._count.pigId
+      })
+  }
+
+  const penOverview: Array<{ pen: string; count: number; healthStatus: { healthy: number; atRisk: number; sick: number } }> = []
+  if (raw.penStats) {
+      raw.penStats.forEach((p: { pen: string; _count: { pigId: number } }) => {
+          penOverview.push({
+              pen: p.pen,
+              count: p._count.pigId,
+              // Approximate health status for pen (backend doesn't provide multi-group)
+              healthStatus: { healthy: p._count.pigId, atRisk: 0, sick: 0 }
+          })
+      })
+  }
+
+  return {
+      totalPigs: raw.totalPigs || 0,
+      byType,
+      healthStatus,
+      recentScans: raw.recentScans || [],
+      scansByDay: raw.scansByDay || [],
+      penOverview
+  }
 }
 
 /**
@@ -133,7 +219,7 @@ export async function getPigDashboardStats(
  */
 export async function getRecentScans(limit: number = 10): Promise<PigScanLog[]> {
   const response = await client.get(`/api/pigs/scans/recent?limit=${limit}`)
-  return response.data.scans || []
+  return response.data || []
 }
 
 /**
@@ -171,7 +257,8 @@ export async function exportPigsToCSV(opts?: GetPigsOptions): Promise<Blob> {
   if (opts?.startDate) params.append('startDate', opts.startDate)
   if (opts?.endDate) params.append('endDate', opts.endDate)
 
-  const response = await client.get(`/api/pigs/export/csv?${params.toString()}`, {
+  // Use /export instead of /export/csv to match backend route
+  const response = await client.get(`/api/pigs/export?${params.toString()}`, {
     responseType: 'blob',
   })
   return response.data
