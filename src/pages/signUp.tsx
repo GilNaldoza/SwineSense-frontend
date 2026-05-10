@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createAdmin } from "@/api/admins";
 import { toast } from "sonner";
-import Logo from "@/assets/logo.svg";
+import Logo from "@/assets/SwineSense_TextLogo_White.svg";
 import {
   Field,
   FieldContent,
