@@ -21,7 +21,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const menuItems = [
     { label: "Dashboard", icon: Home, path: "/dashboard" },
-    { label: "Records", icon: FileText, path: "/records" },
+    { label: "Scan History", icon: FileText, path: "/records" },
     { label: "Pig Management", icon: Users, path: "/pig-management" },
     { label: "Analytics", icon: BarChart3, path: "/analytics" },
     { label: "Staff", icon: Users, path: "/staff" },

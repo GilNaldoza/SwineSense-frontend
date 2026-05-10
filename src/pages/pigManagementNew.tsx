@@ -1,6 +1,7 @@
 import { useState } from "react";
 import RFIDScanner, { type PigRecord } from "@/components/form/rfidScanner";
 import PigDashboard from "./pigDashboard";
+import PigRegistry from "./pigRegistry";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -150,12 +151,17 @@ export default function PigManagementPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-1">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="dashboard">Dashboard Overview</TabsTrigger>
+          <TabsTrigger value="registry">Pig Registry</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6">
+        <TabsContent value="dashboard" className="space-y-6 mt-6">
           <PigDashboard />
+        </TabsContent>
+        
+        <TabsContent value="registry" className="space-y-6 mt-6">
+          <PigRegistry />
         </TabsContent>
       </Tabs>
     </div>

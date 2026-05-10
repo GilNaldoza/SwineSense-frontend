@@ -58,6 +58,16 @@ export type PigDashboardStats = {
   penOverview: Array<{ pen: string; count: number; healthStatus: { healthy: number; atRisk: number; sick: number } }>
 }
 
+export type PigScansResponse = {
+  scans: PigScanLog[]
+  pagination?: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
 type BackendPigModel = {
   id?: string;
   pigId?: number | string;
@@ -100,7 +110,7 @@ const adaptPig = (p: BackendPigModel): PigRecord => ({
  * Check if a pig exists by RFID tag
  */
 export async function checkPigByRfid(rfidTag: string): Promise<PigRecord | null> {
-  const response = await client.get(`/api/pigs/check-rfid/${encodeURIComponent(rfidTag)}`)
+  const response = await client.get(`/pigs/check-rfid/${encodeURIComponent(rfidTag)}`)
   return response.data ? adaptPig(response.data) : null
 }
 
@@ -112,7 +122,7 @@ export async function createPigRecord(pigData: Omit<PigRecord, 'id' | 'lastScann
     ...pigData,
     pigNumber: pigData.pigId // map frontend pigId back to backend pigNumber
   }
-  const response = await client.post('/api/pigs', backendData)
+  const response = await client.post('/pigs', backendData)
   return adaptPig(response.data)
 }
 
@@ -127,7 +137,7 @@ export async function updatePigRecord(
     ...pigData,
     ...(pigData.pigId && { pigNumber: pigData.pigId })
   }
-  const response = await client.put(`/api/pigs/${pigId}`, backendData)
+  const response = await client.put(`/pigs/${pigId}`, backendData)
   return adaptPig(response.data)
 }
 
@@ -135,7 +145,7 @@ export async function updatePigRecord(
  * Get a single pig record
  */
 export async function getPigById(pigId: string): Promise<PigRecord> {
-  const response = await client.get(`/api/pigs/${pigId}`)
+  const response = await client.get(`/pigs/${pigId}`)
   return adaptPig(response.data)
 }
 
@@ -155,7 +165,7 @@ export async function getPigs(opts?: GetPigsOptions): Promise<PigsResponse> {
   if (opts?.startDate) params.append('startDate', opts.startDate)
   if (opts?.endDate) params.append('endDate', opts.endDate)
 
-  const response = await client.get(`/api/pigs?${params.toString()}`)
+  const response = await client.get(`/pigs?${params.toString()}`)
   return {
     pigs: (response.data?.data?.pigs || []).map(adaptPig),
     pagination: response.data?.data?.pagination
@@ -173,7 +183,7 @@ export async function getPigDashboardStats(
   if (startDate) params.append('startDate', startDate)
   if (endDate) params.append('endDate', endDate)
 
-  const response = await client.get(`/api/pigs/stats/dashboard?${params.toString()}`)
+  const response = await client.get(`/pigs/stats/dashboard?${params.toString()}`)
   const raw = response.data
   
   const byType: { [key: string]: number } = {}
@@ -218,8 +228,28 @@ export async function getPigDashboardStats(
  * Get recently scanned pigs
  */
 export async function getRecentScans(limit: number = 10): Promise<PigScanLog[]> {
-  const response = await client.get(`/api/pigs/scans/recent?limit=${limit}`)
+  const response = await client.get(`/pigs/scans/recent?limit=${limit}`)
   return response.data || []
+}
+
+/**
+ * Get paginated pig scans
+ */
+export async function getPigScans(opts?: GetPigsOptions): Promise<PigScansResponse> {
+  const params = new URLSearchParams()
+  
+  if (opts?.query) params.append('search', opts.query)
+  if (opts?.pen) params.append('location', opts.pen) // Note: Backend scans use 'location', but we can map 'pen' to it
+  if (opts?.page) params.append('page', opts.page.toString())
+  if (opts?.limit) params.append('limit', opts.limit.toString())
+  if (opts?.startDate) params.append('startDate', opts.startDate)
+  if (opts?.endDate) params.append('endDate', opts.endDate)
+
+  const response = await client.get(`/pigs/scans?${params.toString()}`)
+  return {
+    scans: response.data?.data?.scans || [],
+    pagination: response.data?.data?.pagination
+  }
 }
 
 /**
@@ -230,7 +260,7 @@ export async function recordPigScan(
   location?: string,
   notes?: string
 ): Promise<PigScanLog> {
-  const response = await client.post('/api/pigs/scans', {
+  const response = await client.post('/pigs/scans', {
     rfidTag,
     location,
     notes,
@@ -242,7 +272,7 @@ export async function recordPigScan(
  * Delete a pig record (soft delete)
  */
 export async function deletePigRecord(pigId: string): Promise<void> {
-  await client.delete(`/api/pigs/${pigId}`)
+  await client.delete(`/pigs/${pigId}`)
 }
 
 /**
@@ -258,7 +288,7 @@ export async function exportPigsToCSV(opts?: GetPigsOptions): Promise<Blob> {
   if (opts?.endDate) params.append('endDate', opts.endDate)
 
   // Use /export instead of /export/csv to match backend route
-  const response = await client.get(`/api/pigs/export?${params.toString()}`, {
+  const response = await client.get(`/pigs/export?${params.toString()}`, {
     responseType: 'blob',
   })
   return response.data

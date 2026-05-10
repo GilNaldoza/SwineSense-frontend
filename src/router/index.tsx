@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from '../layout'
 import App from '../App'
 import Dashboard from '../pages/dashboard'
-import RecordsPage from '../pages/recordsList'
+import ScanHistoryPage from '../pages/scanHistory'
 import PigProfile from '../pages/pigProfile'
 import PigManagementPage from '../pages/pigManagementNew'
 import AnalyticsPage from '../pages/analyticsPage'
@@ -19,7 +19,7 @@ export default function Router() {
         <Route path="/" element={<Layout />}>
           <Route index element={<App />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="records" element={<RecordsPage />} />
+          <Route path="records" element={<ScanHistoryPage />} />
           <Route path="pig/:id" element={<PigProfile />} />
           <Route path="pig-management" element={<PigManagementPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
