@@ -1,6 +1,6 @@
-# LENS Admin Dashboard (Frontend)
+# SwineSense Admin Dashboard (Frontend)
 
-The centralized administrative interface for the Library Entry Management System (LENS). This web application allows library staff and administrators to monitor entries, manage users, view analytics, and export reports.
+The centralized administrative interface for SwineSense (Pig Management System). This web application allows farm managers and administrators to monitor offline scans, manage pigs, view analytics, and export reports.
 
 ## 🛠️ Tech Stack
 
@@ -14,11 +14,11 @@ The centralized administrative interface for the Library Entry Management System
 
 ## ✨ Key Features
 
-- **Dashboard & Analytics:** Real-time visualization of library traffic, peak hours, and user demographics.
-- **entry Records:**
-  - **Live Table:** View entry logs as they happen.
-  - **Advanced Filtering:** Filter by **Location** (e.g., Main, Graduate), **Date Range**, **College**, **Department**, and **User Type**.
-  - **Smart Search:** Quick lookup by Name or ID Number.
+- **Dashboard & Analytics:** Real-time visualization of farm scanning activity and pig demographics.
+- **Scan Records:**
+  - **Live Table:** View scan logs as they happen.
+  - **Advanced Filtering:** Filter by **Location** (e.g., Barn A, Farrowing Pen), **Date Range**, and **Status**.
+  - **Smart Search:** Quick lookup by RFID Tag or Pig Number.
 - **Staff Management:**
   - Create and manage staff accounts.
   - Role-based permissions (Super Admin vs. Staff).
