@@ -1,23 +1,23 @@
-import { useState } from "react"
-import RFIDScanner, { type PigRecord } from "@/components/form/rfidScanner"
-import PigDashboard from "./pigDashboard"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import RFIDScanner, { type PigRecord } from "@/components/form/rfidScanner";
+import PigDashboard from "./pigDashboard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 export default function PigManagementPage() {
-  const [lastScannedPig, setLastScannedPig] = useState<PigRecord | null>(null)
+  const [lastScannedPig, setLastScannedPig] = useState<PigRecord | null>(null);
   const [recentActions, setRecentActions] = useState<
     Array<{
-      id: string
-      action: "scan" | "create" | "update"
-      pigId: string
-      timestamp: string
+      id: string;
+      action: "scan" | "create" | "update";
+      pigId: string;
+      timestamp: string;
     }>
-  >([])
+  >([]);
 
   const handleScanSuccess = (pig: PigRecord) => {
-    setLastScannedPig(pig)
+    setLastScannedPig(pig);
     setRecentActions((prev) => [
       {
         id: `${Date.now()}`,
@@ -26,11 +26,11 @@ export default function PigManagementPage() {
         timestamp: new Date().toLocaleTimeString(),
       },
       ...prev.slice(0, 4),
-    ])
-  }
+    ]);
+  };
 
   const handleNewPigCreated = (pig: PigRecord) => {
-    setLastScannedPig(pig)
+    setLastScannedPig(pig);
     setRecentActions((prev) => [
       {
         id: `${Date.now()}`,
@@ -39,8 +39,8 @@ export default function PigManagementPage() {
         timestamp: new Date().toLocaleTimeString(),
       },
       ...prev.slice(0, 4),
-    ])
-  }
+    ]);
+  };
 
   return (
     <div className="space-y-6">
@@ -48,7 +48,9 @@ export default function PigManagementPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Pig Management</h2>
-          <p className="text-gray-500 mt-1">Manage and scan pigs in your farm</p>
+          <p className="text-gray-500 mt-1">
+            Manage and scan pigs in your farm
+          </p>
         </div>
         <Button className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg">
           Add New Pig
@@ -72,15 +74,21 @@ export default function PigManagementPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-xs text-gray-600">Pig ID</p>
-                <p className="font-semibold text-gray-900 mt-1">{lastScannedPig.pigId}</p>
+                <p className="font-semibold text-gray-900 mt-1">
+                  {lastScannedPig.pigId}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-gray-600">Type</p>
-                <p className="font-semibold text-gray-900 mt-1">{lastScannedPig.pigType}</p>
+                <p className="font-semibold text-gray-900 mt-1">
+                  {lastScannedPig.pigType}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-gray-600">Pen</p>
-                <p className="font-semibold text-gray-900 mt-1">{lastScannedPig.pen}</p>
+                <p className="font-semibold text-gray-900 mt-1">
+                  {lastScannedPig.pen}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-gray-600">Status</p>
@@ -126,9 +134,13 @@ export default function PigManagementPage() {
                     >
                       {action.action.toUpperCase()}
                     </span>
-                    <span className="font-medium text-gray-900">{action.pigId}</span>
+                    <span className="font-medium text-gray-900">
+                      {action.pigId}
+                    </span>
                   </div>
-                  <span className="text-gray-500 text-xs">{action.timestamp}</span>
+                  <span className="text-gray-500 text-xs">
+                    {action.timestamp}
+                  </span>
                 </div>
               ))}
             </div>
@@ -147,5 +159,5 @@ export default function PigManagementPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
