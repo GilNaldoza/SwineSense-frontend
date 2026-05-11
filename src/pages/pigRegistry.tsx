@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getPigs, type PigRecord, type GetPigsOptions } from "@/api/pigs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 
 export default function PigRegistry() {
+  const navigate = useNavigate();
   const [pigs, setPigs] = useState<PigRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,8 +124,8 @@ export default function PigRegistry() {
                 </tr>
               ) : (
                 pigs.map(pig => (
-                  <tr key={pig.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{pig.pigId}</td>
+                  <tr key={pig.id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => navigate(`/pig/${pig.id}`)}>
+                    <td className="px-4 py-3 font-medium text-pink-600 hover:text-pink-800">{pig.pigId}</td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{pig.rfidTag}</td>
                     <td className="px-4 py-3 capitalize">{pig.pigType}</td>
                     <td className="px-4 py-3">{pig.pen}</td>

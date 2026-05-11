@@ -1,22 +1,74 @@
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Heart, AlertTriangle, TrendingUp } from 'lucide-react'
+import { Users, Heart, AlertTriangle, TrendingUp, Activity } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom"
+import { getPigDashboardStats, type PigDashboardStats } from "@/api/pigs"
 
 export default function Dashboard() {
-  const stats = [
-    { label: 'Total Pigs', value: '1,284', icon: Users, color: 'bg-blue-100', iconColor: 'text-blue-600', change: '+12' },
-    { label: 'Healthy', value: '1,242', icon: Heart, color: 'bg-green-100', iconColor: 'text-green-600', change: '+48' },
-    { label: 'At-Risk', value: '42', icon: AlertTriangle, color: 'bg-amber-100', iconColor: 'text-amber-600', change: '-5' },
-    { label: 'Activity', value: '98%', icon: TrendingUp, color: 'bg-purple-100', iconColor: 'text-purple-600', change: '+2%' },
-  ]
+  const navigate = useNavigate()
+  const [stats, setStats] = useState<PigDashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const recentActivity = [
-    { id: 1, action: 'Pig scanned', pig: 'PIG-002', time: '2 minutes ago', status: 'healthy' },
-    { id: 2, action: 'Health check', pig: 'PIG-015', time: '15 minutes ago', status: 'at-risk' },
-    { id: 3, action: 'Record updated', pig: 'PIG-087', time: '1 hour ago', status: 'healthy' },
-    { id: 4, action: 'New entry', pig: 'PIG-156', time: '2 hours ago', status: 'healthy' },
-    { id: 5, action: 'Alert triggered', pig: 'PIG-034', time: '3 hours ago', status: 'sick' },
-  ]
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      const data = await getPigDashboardStats()
+      setStats(data)
+    } catch (err) {
+      console.error("Failed to load dashboard stats:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const statCards = stats ? [
+    { label: 'Total Pigs', value: stats.totalPigs.toLocaleString(), icon: Users, color: 'bg-blue-100', iconColor: 'text-blue-600' },
+    { label: 'Healthy', value: stats.healthStatus.healthy.toLocaleString(), icon: Heart, color: 'bg-green-100', iconColor: 'text-green-600' },
+    { label: 'At-Risk', value: stats.healthStatus.atRisk.toLocaleString(), icon: AlertTriangle, color: 'bg-amber-100', iconColor: 'text-amber-600' },
+    { label: 'Sick', value: stats.healthStatus.sick.toLocaleString(), icon: Activity, color: 'bg-red-100', iconColor: 'text-red-600' },
+  ] : []
+
+  const healthScore = stats && stats.totalPigs > 0
+    ? Math.round((stats.healthStatus.healthy / stats.totalPigs) * 100)
+    : 0
+
+  // Format recent scans from the API into display-ready activity items
+  const recentActivity = (stats?.recentScans || []).slice(0, 5).map((scan, idx) => ({
+    id: idx,
+    action: 'Pig scanned',
+    pig: (scan as Record<string, unknown>).pig
+      ? ((scan as Record<string, unknown>).pig as Record<string, string>).pigNumber || `Pig #${scan.pigId}`
+      : `Pig #${scan.pigId}`,
+    time: new Date(scan.scanTimestamp || ((scan as Record<string, unknown>).timestamp as string)).toLocaleString(),
+    status: 'healthy' as const,
+  }))
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
+            <p className="text-gray-500 mt-1">Loading farm overview...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-16 bg-gray-100 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -26,14 +78,17 @@ export default function Dashboard() {
           <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
           <p className="text-gray-500 mt-1">Overview of your swine farm</p>
         </div>
-        <Button className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg">
-          New Record
+        <Button
+          className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg"
+          onClick={() => navigate('/pig-management')}
+        >
+          Manage Pigs
         </Button>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, idx) => {
+        {statCards.map((stat, idx) => {
           const Icon = stat.icon
           return (
             <Card key={idx} className="hover:shadow-lg transition-shadow">
@@ -42,7 +97,6 @@ export default function Dashboard() {
                   <div>
                     <p className="text-gray-600 text-sm font-medium">{stat.label}</p>
                     <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                    <p className="text-green-600 text-xs font-semibold mt-1">{stat.change}</p>
                   </div>
                   <div className={`${stat.color} p-3 rounded-lg`}>
                     <Icon className={`${stat.iconColor} w-6 h-6`} />
@@ -58,26 +112,26 @@ export default function Dashboard() {
         {/* Recent Activity */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>Recent Scans</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      activity.status === 'healthy' ? 'bg-green-500' :
-                      activity.status === 'at-risk' ? 'bg-amber-500' :
-                      'bg-red-500'
-                    }`}></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                      <p className="text-xs text-gray-500">{activity.pig}</p>
+              {recentActivity.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-6">No recent scans recorded yet.</p>
+              ) : (
+                recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                        <p className="text-xs text-gray-500">{activity.pig}</p>
+                      </div>
                     </div>
+                    <p className="text-xs text-gray-500">{activity.time}</p>
                   </div>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -91,32 +145,37 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-medium text-gray-600">Health Score</p>
-                <p className="text-sm font-bold text-gray-900">96%</p>
+                <p className="text-sm font-bold text-gray-900">{healthScore}%</p>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: '96%' }}></div>
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${healthScore}%` }}></div>
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-medium text-gray-600">Feed Efficiency</p>
-                <p className="text-sm font-bold text-gray-900">89%</p>
+                <p className="text-sm font-medium text-gray-600">Pig Types</p>
+                <p className="text-sm font-bold text-gray-900">{Object.keys(stats?.byType || {}).length}</p>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '89%' }}></div>
-              </div>
+              {stats?.byType && Object.entries(stats.byType).map(([type, count]) => (
+                <div key={type} className="flex items-center justify-between text-xs text-gray-600 mt-1">
+                  <span className="capitalize">{type}</span>
+                  <span className="font-semibold">{count}</span>
+                </div>
+              ))}
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-medium text-gray-600">Space Usage</p>
-                <p className="text-sm font-bold text-gray-900">73%</p>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: '73%' }}></div>
+                <p className="text-sm font-medium text-gray-600">Total Pens</p>
+                <p className="text-sm font-bold text-gray-900">{stats?.penOverview?.length || 0}</p>
               </div>
             </div>
             <div className="pt-4 border-t">
-              <Button className="w-full text-pink-600 border border-pink-600 hover:bg-pink-50" variant="outline">
+              <Button
+                className="w-full text-pink-600 border border-pink-600 hover:bg-pink-50"
+                variant="outline"
+                onClick={() => navigate('/analytics')}
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
                 View Analytics
               </Button>
             </div>

@@ -1,36 +1,98 @@
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Button } from "@/components/ui/button"
 import { Download, TrendingUp } from 'lucide-react'
+import { getPigDashboardStats, exportPigsToCSV, type PigDashboardStats } from "@/api/pigs"
 
 export default function AnalyticsPage() {
-  const weightTrendData = [
-    { month: 'Jan', avg: 180 },
-    { month: 'Feb', avg: 195 },
-    { month: 'Mar', avg: 210 },
-    { month: 'Apr', avg: 225 },
-    { month: 'May', avg: 240 },
-  ]
+  const [stats, setStats] = useState<PigDashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
 
-  const healthDistributionData = [
-    { name: 'Healthy', value: 1242, fill: '#10b981' },
-    { name: 'At-Risk', value: 35, fill: '#f59e0b' },
-    { name: 'Sick', value: 7, fill: '#ef4444' },
-  ]
+  useEffect(() => {
+    fetchStats()
+  }, [])
 
-  const typeDistributionData = [
-    { type: 'Sow', count: 450, fill: '#8b5cf6' },
-    { type: 'Boar', count: 280, fill: '#ef4444' },
-    { type: 'Piglet', count: 350, fill: '#3b82f6' },
-    { type: 'Gilt', count: 162, fill: '#f59e0b' },
-  ]
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      const data = await getPigDashboardStats()
+      setStats(data)
+    } catch (err) {
+      console.error("Failed to load analytics:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const metrics = [
-    { label: 'Avg Weight Gain', value: '2.5 lbs/week', trend: '+12%', icon: '📈' },
-    { label: 'Feed Efficiency', value: '3.2 FCR', trend: '+8%', icon: '🌾' },
-    { label: 'Mortality Rate', value: '0.5%', trend: '-3%', icon: '📊' },
-    { label: 'Vaccination Rate', value: '99.2%', trend: 'Stable', icon: '💉' },
-  ]
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      const blob = await exportPigsToCSV()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `swinesense_pigs_export_${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error("Export failed:", err)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const HEALTH_COLORS: Record<string, string> = { Healthy: '#10b981', 'At-Risk': '#f59e0b', Sick: '#ef4444' }
+  const TYPE_COLORS: Record<string, string> = { piglet: '#3b82f6', gilt: '#f59e0b', sow: '#8b5cf6', boar: '#ef4444' }
+
+  const healthDistributionData = stats ? [
+    { name: 'Healthy', value: stats.healthStatus.healthy, fill: HEALTH_COLORS['Healthy'] },
+    { name: 'At-Risk', value: stats.healthStatus.atRisk, fill: HEALTH_COLORS['At-Risk'] },
+    { name: 'Sick', value: stats.healthStatus.sick, fill: HEALTH_COLORS['Sick'] },
+  ].filter(d => d.value > 0) : []
+
+  const typeDistributionData = stats ? Object.entries(stats.byType).map(([type, count]) => ({
+    type: type.charAt(0).toUpperCase() + type.slice(1),
+    count,
+    fill: TYPE_COLORS[type] || '#6b7280',
+  })) : []
+
+  const scansByDayData = (stats?.scansByDay || []).map(d => ({
+    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    scans: d.count,
+  }))
+
+  const healthScore = stats && stats.totalPigs > 0
+    ? Math.round((stats.healthStatus.healthy / stats.totalPigs) * 100)
+    : 0
+
+  const metrics = stats ? [
+    { label: 'Total Pigs', value: stats.totalPigs.toLocaleString(), trend: '', icon: '🐖' },
+    { label: 'Health Score', value: `${healthScore}%`, trend: healthScore >= 90 ? 'Excellent' : healthScore >= 70 ? 'Good' : 'Needs Attention', icon: '💚' },
+    { label: 'Active Pens', value: `${stats.penOverview?.length || 0}`, trend: '', icon: '🏠' },
+    { label: 'Scans (7 days)', value: `${(stats.scansByDay || []).reduce((acc, d) => acc + d.count, 0)}`, trend: '', icon: '📡' },
+  ] : []
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Analytics</h2>
+          <p className="text-gray-500 mt-1">Loading farm metrics...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6"><div className="h-16 bg-gray-100 rounded"></div></CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -40,9 +102,13 @@ export default function AnalyticsPage() {
           <h2 className="text-3xl font-bold text-gray-900">Analytics</h2>
           <p className="text-gray-500 mt-1">Farm performance and key metrics</p>
         </div>
-        <Button className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg gap-2">
+        <Button
+          className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg gap-2"
+          onClick={handleExport}
+          disabled={exporting}
+        >
           <Download className="w-4 h-4" />
-          Export Report
+          {exporting ? 'Exporting...' : 'Export Report'}
         </Button>
       </div>
 
@@ -55,9 +121,11 @@ export default function AnalyticsPage() {
                 <div>
                   <p className="text-gray-600 text-sm font-medium">{metric.label}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-2">{metric.value}</p>
-                  <p className={`text-xs font-semibold mt-1 ${metric.trend.includes('+') ? 'text-green-600' : metric.trend.includes('-') ? 'text-red-600' : 'text-gray-600'}`}>
-                    {metric.trend}
-                  </p>
+                  {metric.trend && (
+                    <p className={`text-xs font-semibold mt-1 ${metric.trend === 'Excellent' ? 'text-green-600' : metric.trend === 'Good' ? 'text-blue-600' : 'text-amber-600'}`}>
+                      {metric.trend}
+                    </p>
+                  )}
                 </div>
                 <div className="text-3xl">{metric.icon}</div>
               </div>
@@ -68,24 +136,30 @@ export default function AnalyticsPage() {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weight Trend */}
+        {/* Scan Activity (Line Chart) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-pink-600" />
-              Average Weight Trend
+              Scan Activity (Last 7 Days)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={weightTrendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="avg" stroke="#ec4899" strokeWidth={2} dot={{ fill: '#ec4899' }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {scansByDayData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={scansByDayData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="scans" stroke="#ec4899" strokeWidth={2} dot={{ fill: '#ec4899' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-gray-400">
+                No scan data available yet
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -95,39 +169,51 @@ export default function AnalyticsPage() {
             <CardTitle>Health Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={healthDistributionData} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${value}`} outerRadius={100} fill="#8884d8" dataKey="value">
-                  {healthDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {healthDistributionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={healthDistributionData} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${value}`} outerRadius={100} fill="#8884d8" dataKey="value">
+                    {healthDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-gray-400">
+                No pig data available yet
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Charts Row 2 - Type Distribution */}
       <Card>
         <CardHeader>
           <CardTitle>Pig Type Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={typeDistributionData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="type" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#ec4899" radius={[8, 8, 0, 0]}>
-                {typeDistributionData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {typeDistributionData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={typeDistributionData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="type" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="#ec4899" radius={[8, 8, 0, 0]}>
+                  {typeDistributionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-400">
+              No pig data available yet
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -135,39 +221,19 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-linear-to-br from-green-50 to-green-100 border-green-200">
           <CardContent className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Positive Indicators</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Health Overview</h3>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                <span>98% vaccination coverage</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                <span>96% health score</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-600 rounded-full"></span>
-                <span>Consistent growth trend</span>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-linear-to-br from-amber-50 to-amber-100 border-amber-200">
-          <CardContent className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Areas to Monitor</h3>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-amber-600 rounded-full"></span>
-                <span>35 pigs at-risk</span>
+                <span>{stats?.healthStatus.healthy || 0} healthy pigs</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-amber-600 rounded-full"></span>
-                <span>Feed cost trending up</span>
+                <span>{stats?.healthStatus.atRisk || 0} at-risk pigs</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-amber-600 rounded-full"></span>
-                <span>Space optimization needed</span>
+                <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                <span>{stats?.healthStatus.sick || 0} sick pigs</span>
               </li>
             </ul>
           </CardContent>
@@ -175,20 +241,37 @@ export default function AnalyticsPage() {
 
         <Card className="bg-linear-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardContent className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Recommendations</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Type Breakdown</h3>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                <span>Review at-risk pigs</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                <span>Optimize feed schedule</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                <span>Plan facility expansion</span>
-              </li>
+              {stats?.byType && Object.entries(stats.byType).map(([type, count]) => (
+                <li key={type} className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                  <span className="capitalize">{type}: {count}</span>
+                </li>
+              ))}
+              {(!stats?.byType || Object.keys(stats.byType).length === 0) && (
+                <li className="text-gray-400">No data yet</li>
+              )}
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-linear-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Pen Overview</h3>
+            <ul className="space-y-2 text-sm">
+              {stats?.penOverview && stats.penOverview.slice(0, 5).map((pen) => (
+                <li key={pen.pen} className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
+                    {pen.pen}
+                  </span>
+                  <span className="font-semibold">{pen.count} pigs</span>
+                </li>
+              ))}
+              {(!stats?.penOverview || stats.penOverview.length === 0) && (
+                <li className="text-gray-400">No data yet</li>
+              )}
             </ul>
           </CardContent>
         </Card>

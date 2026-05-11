@@ -1,16 +1,82 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
 import { Bell, Lock, Users, Database, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import client from '@/api/client'
 
 export default function SettingsPage() {
-  const [farmName, setFarmName] = useState('Sunrise Swine Farm')
-  const [email, setEmail] = useState('admin@swinesense.com')
-  const [language, setLanguage] = useState('en')
-  const [theme, setTheme] = useState('light')
+  const navigate = useNavigate()
+  const [farmName, setFarmName] = useState('SwineSense Farm')
+  const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
   const [notifications, setNotifications] = useState(true)
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+
+  useEffect(() => {
+    // Load the logged-in user's profile from localStorage
+    try {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        setEmail(user.email || '')
+        setFullName(user.fullName || user.username || '')
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('user')
+    localStorage.removeItem('csrfToken')
+    navigate('/sign-in')
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordError(null)
+    setPasswordSuccess(false)
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Please fill in all password fields.")
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.")
+      return
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters.")
+      return
+    }
+
+    try {
+      setChangingPassword(true)
+      await client.put('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      })
+      setPasswordSuccess(true)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: unknown) {
+      console.error("Failed to change password:", err)
+      const error = err as { response?: { data?: { message?: string } } }
+      setPasswordError(error.response?.data?.message || "Failed to change password.")
+    } finally {
+      setChangingPassword(false)
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -38,36 +104,21 @@ export default function SettingsPage() {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Admin Name</label>
+            <Input
+              value={fullName}
+              disabled
+              className="w-full bg-gray-50"
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Admin Email</label>
             <Input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full"
+              disabled
+              className="w-full bg-gray-50"
             />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-              <Select value={language} onChange={(e) => setLanguage(e.target.value)}>
-                <option value="en">English</option>
-                <option value="fil">Filipino</option>
-                <option value="es">Spanish</option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
-              <Select value={theme} onChange={(e) => setTheme(e.target.value)}>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="auto">Auto</option>
-              </Select>
-            </div>
-          </div>
-          <div className="pt-4">
-            <Button className="bg-linear-to-r from-pink-500 to-pink-600 text-white">
-              Save Changes
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -113,16 +164,6 @@ export default function SettingsPage() {
               <input type="checkbox" defaultChecked className="w-4 h-4 text-pink-600 rounded" />
               <span className="text-sm text-gray-700">Daily summary</span>
             </label>
-            <label className="flex items-center gap-3">
-              <input type="checkbox" className="w-4 h-4 text-pink-600 rounded" />
-              <span className="text-sm text-gray-700">Weekly reports</span>
-            </label>
-          </div>
-
-          <div className="pt-4">
-            <Button variant="outline" className="w-full">
-              Save Preferences
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -142,21 +183,33 @@ export default function SettingsPage() {
               type="password"
               placeholder="Current password"
               className="w-full mb-2"
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
             />
             <Input
               type="password"
               placeholder="New password"
               className="w-full mb-2"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
             />
             <Input
               type="password"
               placeholder="Confirm password"
               className="w-full"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
             />
           </div>
+          {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+          {passwordSuccess && <p className="text-sm text-green-600">Password updated successfully!</p>}
           <div className="pt-4">
-            <Button className="bg-linear-to-r from-pink-500 to-pink-600 text-white">
-              Update Password
+            <Button
+              className="bg-linear-to-r from-pink-500 to-pink-600 text-white"
+              onClick={handleChangePassword}
+              disabled={changingPassword}
+            >
+              {changingPassword ? 'Updating...' : 'Update Password'}
             </Button>
           </div>
         </CardContent>
@@ -174,7 +227,7 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-600">
             Manage user roles and permissions. Visit the Staff Management page to add or edit team members.
           </p>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" onClick={() => navigate('/staff')}>
             Go to Staff Management
           </Button>
         </CardContent>
@@ -188,17 +241,14 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div>
             <p className="font-medium text-gray-900 mb-2">Logout</p>
-            <p className="text-sm text-gray-600 mb-4">Sign out from all devices</p>
-            <Button className="text-red-600 border border-red-600 hover:bg-red-50 gap-2">
+            <p className="text-sm text-gray-600 mb-4">Sign out from this device</p>
+            <Button
+              className="text-red-600 border border-red-600 hover:bg-red-50 gap-2"
+              variant="outline"
+              onClick={handleLogout}
+            >
               <LogOut className="w-4 h-4" />
               Logout
-            </Button>
-          </div>
-          <div className="pt-4 border-t border-red-200">
-            <p className="font-medium text-gray-900 mb-2">Delete Account</p>
-            <p className="text-sm text-gray-600 mb-4">Permanently delete your account and all data</p>
-            <Button className="text-red-600 border border-red-600 hover:bg-red-50">
-              Delete Account
             </Button>
           </div>
         </CardContent>
