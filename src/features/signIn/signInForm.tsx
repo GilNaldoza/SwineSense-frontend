@@ -46,9 +46,9 @@ const SignInForm: React.FC = () => {
       const { accessToken, refreshToken, admin } = data || {};
       if (accessToken) localStorage.setItem("accessToken", accessToken);
       if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-      if (admin) localStorage.setItem("profile", JSON.stringify(admin));
+      if (admin) localStorage.setItem("user", JSON.stringify(admin));
 
-      navigate("/records");
+      navigate("/dashboard");
     } catch (err: unknown) {
       let message = "Login failed";
       if (typeof err === "object" && err !== null && "message" in err) {

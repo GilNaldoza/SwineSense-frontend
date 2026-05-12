@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download } from 'lucide-react';
-import { getPigScans, type PigScanLog } from "@/api/pigs";
+import { getPigScans, exportPigsToCSV, type PigScanLog } from "@/api/pigs";
 
 // We need to map the pig fields correctly from the PigScanLog backend response
 type HydratedScanLog = PigScanLog & { 
@@ -75,7 +75,24 @@ export default function ScanHistoryPage() {
           <h2 className="text-3xl font-bold text-gray-900">Scan History</h2>
           <p className="text-gray-500 mt-1">View offline and real-time pig scanning logs</p>
         </div>
-        <Button className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg gap-2">
+        <Button
+          className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg gap-2"
+          onClick={async () => {
+            try {
+              const blob = await exportPigsToCSV();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `scan-history-${new Date().toISOString().split('T')[0]}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            } catch (err) {
+              console.error("Export failed:", err);
+            }
+          }}
+        >
           <Download className="w-4 h-4" />
           Export CSV
         </Button>

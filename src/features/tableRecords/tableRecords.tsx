@@ -1,7 +1,6 @@
 import * as React from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import ReusableTable from "@/components/table/reusableTable"
-import { rows as mockRows } from "@/mockData/records"
 import { columns } from "./columns"
 import { useLayout } from "@/components/layout/useLayout"
 import { type SortOption, useSort } from "@/components/table/sortStore"
@@ -190,7 +189,7 @@ const TableRecords = () => {
     if (isError) return []
     if (data) return data
     if (isLoading) return []
-    return mockRows as unknown as EntryRow[]
+    return []
   }, [data, isLoading, isError])
 
   // Live updates handled internally by useEntries refetchInterval

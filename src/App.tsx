@@ -51,12 +51,9 @@ function App() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <Button className="px-8 py-3 rounded-xl bg-linear-to-r from-pink-500 to-pink-600 text-white font-semibold hover:shadow-lg transition-all" asChild>
                 <Link to="/sign-in">Sign In</Link>
-              </Button>
-              <Button className="px-8 py-3 rounded-xl border-2 border-pink-500 text-pink-600 font-semibold hover:bg-pink-50 transition-all" variant="outline" asChild>
-                <Link to="/sign-up">Create Account</Link>
               </Button>
             </div>
 
@@ -65,7 +62,7 @@ function App() {
 
           {/* Footer */}
           <div className="mt-8 text-center text-gray-600 text-sm">
-            <p>© 2025 SwineSense. All rights reserved.</p>
+            <p>© 2026 SwineSense. All rights reserved.</p>
           </div>
         </div>
       </div>

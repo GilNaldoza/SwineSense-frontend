@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, Navigate } from "react-router-dom";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 
@@ -10,6 +10,12 @@ const Layout = () => {
 
   if (isAuthPage) {
     return <Outlet />;
+  }
+
+  // Auth guard: redirect to sign-in if no token
+  const token = localStorage.getItem("accessToken");
+  if (!token) {
+    return <Navigate to="/sign-in" replace />;
   }
 
   return (

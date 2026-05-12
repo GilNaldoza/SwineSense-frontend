@@ -30,7 +30,7 @@ const SignIn: React.FC = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-white/70 text-sm">
-              © 2025 SwineSense. All rights reserved.
+              © 2026 SwineSense. All rights reserved.
             </p>
           </div>
         </div>

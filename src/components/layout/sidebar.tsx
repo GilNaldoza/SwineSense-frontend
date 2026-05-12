@@ -30,7 +30,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
-    // TODO: Clear auth tokens and redirect to login
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("csrfToken");
     navigate("/sign-in");
   };
 
