@@ -86,6 +86,43 @@ type BackendPigModel = {
   updatedAt: string;
 }
 
+type BackendScan = {
+  scanId?: number | string
+  scan_id?: number | string
+  id?: number | string
+  pigId?: number | string
+  pig_id?: number | string
+  pig?: { rfidTag?: string }
+  rfidTag?: string
+  rfid_tag?: string
+  timestamp?: string
+  scanTimestamp?: string
+  location?: string
+  scannedBy?: number | string
+  staffId?: number | string
+  notes?: string
+}
+
+type BackendPenStat = {
+  pen?: string
+  count?: number
+  _count?: { pigId?: number }
+  healthy?: number
+  atRisk?: number
+  sick?: number
+  healthStatus?: { healthy?: number; atRisk?: number; sick?: number }
+}
+
+type BackendWeight = {
+  weightLogId?: number | string
+  id?: number | string
+  pigId?: number | string
+  weight?: number
+  recordedAt?: string
+  admin?: { fullName?: string }
+  notes?: string
+}
+
 /**
  * Adapter to map backend Pig model to frontend PigRecord type
  */
@@ -104,6 +141,19 @@ const adaptPig = (p: BackendPigModel): PigRecord => ({
   lastScanned: p.lastScanned,
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,
+});
+
+/**
+ * Adapter to map backend Scan model to frontend PigScanLog type
+ */
+const adaptScan = (s: BackendScan): PigScanLog => ({
+  id: String(s.scanId || s.scan_id || s.id || ''),
+  pigId: String(s.pigId || s.pig_id || ''),
+  rfidTag: s.pig?.rfidTag || s.rfidTag || s.rfid_tag || '',
+  scanTimestamp: s.timestamp || s.scanTimestamp || '',
+  location: s.location || undefined,
+  staffId: s.scannedBy ? String(s.scannedBy) : (s.staffId ? String(s.staffId) : undefined),
+  notes: s.notes || undefined,
 });
 
 /**
@@ -202,23 +252,21 @@ export async function getPigDashboardStats(
       })
   }
 
-  const penOverview: Array<{ pen: string; count: number; healthStatus: { healthy: number; atRisk: number; sick: number } }> = []
-  if (raw.penStats) {
-      raw.penStats.forEach((p: { pen: string; _count: { pigId: number } }) => {
-          penOverview.push({
-              pen: p.pen,
-              count: p._count.pigId,
-              // Approximate health status for pen (backend doesn't provide multi-group)
-              healthStatus: { healthy: p._count.pigId, atRisk: 0, sick: 0 }
-          })
-      })
-  }
+    const penOverview = (raw.penStats || []).map((p: BackendPenStat) => ({
+      pen: p.pen || '',
+      count: p.count || p._count?.pigId || 0,
+      healthStatus: {
+        healthy: p.healthy || p.healthStatus?.healthy || 0,
+        atRisk: p.atRisk || p.healthStatus?.atRisk || 0,
+        sick: p.sick || p.healthStatus?.sick || 0,
+      }
+    }))
 
   return {
       totalPigs: raw.totalPigs || 0,
       byType,
       healthStatus,
-      recentScans: raw.recentScans || [],
+      recentScans: (raw.recentScans || []).map(adaptScan),
       scansByDay: raw.scansByDay || [],
       penOverview
   }
@@ -229,7 +277,7 @@ export async function getPigDashboardStats(
  */
 export async function getRecentScans(limit: number = 10): Promise<PigScanLog[]> {
   const response = await client.get(`/pigs/scans/recent?limit=${limit}`)
-  return response.data || []
+  return (response.data || []).map(adaptScan)
 }
 
 /**
@@ -247,7 +295,7 @@ export async function getPigScans(opts?: GetPigsOptions): Promise<PigScansRespon
 
   const response = await client.get(`/pigs/scans?${params.toString()}`)
   return {
-    scans: response.data?.data?.scans || [],
+    scans: (response.data?.data?.scans || []).map(adaptScan),
     pagination: response.data?.data?.pagination
   }
 }
@@ -291,5 +339,53 @@ export async function exportPigsToCSV(opts?: GetPigsOptions): Promise<Blob> {
   const response = await client.get(`/pigs/export?${params.toString()}`, {
     responseType: 'blob',
   })
+  return response.data
+}
+
+/**
+ * Export pig scan records as CSV
+ */
+export async function exportPigScansToCSV(opts?: { search?: string; location?: string; startDate?: string; endDate?: string }): Promise<Blob> {
+  const params = new URLSearchParams()
+  if (opts?.search) params.append('search', opts.search)
+  if (opts?.location) params.append('location', opts.location)
+  if (opts?.startDate) params.append('startDate', opts.startDate)
+  if (opts?.endDate) params.append('endDate', opts.endDate)
+  const response = await client.get(`/pigs/scans/export?${params.toString()}`, { responseType: 'blob' })
+  return response.data
+}
+
+/**
+ * Weight log entry type
+ */
+export type WeightLogEntry = {
+  id: string
+  pigId: string
+  weight: number
+  recordedAt: string
+  recordedBy?: string
+  notes?: string
+}
+
+/**
+ * Get weight history for a pig
+ */
+export async function getWeightHistory(pigId: string, limit: number = 50): Promise<WeightLogEntry[]> {
+  const response = await client.get(`/pigs/${pigId}/weight?limit=${limit}`)
+  return (response.data || []).map((w: BackendWeight) => ({
+    id: String(w.weightLogId || w.id || ''),
+    pigId: String(w.pigId || ''),
+    weight: w.weight || 0,
+    recordedAt: w.recordedAt || '',
+    recordedBy: w.admin?.fullName || undefined,
+    notes: w.notes || undefined,
+  }))
+}
+
+/**
+ * Record a new weight entry for a pig
+ */
+export async function recordWeight(pigId: string, weight: number, notes?: string): Promise<WeightLogEntry> {
+  const response = await client.post(`/pigs/${pigId}/weight`, { weight, notes })
   return response.data
 }
