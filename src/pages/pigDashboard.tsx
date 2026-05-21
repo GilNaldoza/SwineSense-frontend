@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import {
   type PigDashboardStats,
   type PigScanLog,
 } from "@/api/pigs";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -50,35 +51,32 @@ export default function PigDashboard() {
     sick: "#ef4444", // red
   };
 
-  // Load dashboard data
+  const loadDashboard = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const useRange = timeRange === "custom" && customStart && customEnd;
+
+      const statsData = await getPigDashboardStats(
+        useRange ? customStart : undefined,
+        useRange ? customEnd : undefined,
+      );
+      const scans = await getRecentScans(10);
+
+      setStats(statsData);
+      setRecentScans(scans);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard");
+      console.error("Dashboard load error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [customEnd, customStart, timeRange]);
+
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const useRange = timeRange === "custom" && customStart && customEnd;
-
-        const statsData = await getPigDashboardStats(
-          useRange ? customStart : undefined,
-          useRange ? customEnd : undefined,
-        );
-        const scans = await getRecentScans(10);
-
-        setStats(statsData);
-        setRecentScans(scans);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load dashboard",
-        );
-        console.error("Dashboard load error:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadDashboard();
-  }, [timeRange, customStart, customEnd]);
+  }, [loadDashboard]);
 
   const handleExport = async () => {
     try {
@@ -91,8 +89,9 @@ export default function PigDashboard() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      toast.success("Pig records exported successfully.");
     } catch (err) {
-      alert("Failed to export records");
+      toast.error("Failed to export records. Please try again.");
       console.error("Export error:", err);
     }
   };
@@ -111,7 +110,14 @@ export default function PigDashboard() {
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p className="text-red-700">{error}</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-red-700 font-medium">
+            Dashboard failed to load: {error}
+          </p>
+          <Button onClick={loadDashboard} className="mt-2 sm:mt-0">
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -188,6 +194,7 @@ export default function PigDashboard() {
             onClick={handleExport}
             variant="outline"
             className="w-full sm:w-auto"
+            disabled={isLoading || !stats}
           >
             Export CSV
           </Button>
