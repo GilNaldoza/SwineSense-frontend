@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download } from 'lucide-react';
-import { getPigScans, exportPigsToCSV, type PigScanLog } from "@/api/pigs";
+import { getPigScans, exportPigScansToCSV, type PigScanLog } from "@/api/pigs";
 
 // We need to map the pig fields correctly from the PigScanLog backend response
 type HydratedScanLog = PigScanLog & { 
@@ -79,7 +79,7 @@ export default function ScanHistoryPage() {
           className="bg-linear-to-r from-pink-500 to-pink-600 text-white hover:shadow-lg gap-2"
           onClick={async () => {
             try {
-              const blob = await exportPigsToCSV();
+              const blob = await exportPigScansToCSV();
               const url = window.URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;

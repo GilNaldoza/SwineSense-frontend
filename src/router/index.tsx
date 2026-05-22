@@ -9,7 +9,8 @@ import AnalyticsPage from '../pages/analyticsPage'
 import StaffManagementPage from '../pages/staffPage'
 import SettingsPage from '../pages/settingsPage'
 import SignIn from '@/pages/signin'
-import LoadingSamples from '@/pages/loadingSamples'
+import AuditPage from '@/pages/auditPage'
+import NotFound from '@/pages/notFound'
 
 export default function Router() {
   return (
@@ -25,12 +26,10 @@ export default function Router() {
           <Route path="staff" element={<StaffManagementPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="sign-in" element={<SignIn />} />
-          <Route path="loading-samples" element={<LoadingSamples />} />
+          <Route path="audit" element={<AuditPage />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>
   )
 }
-
-
-

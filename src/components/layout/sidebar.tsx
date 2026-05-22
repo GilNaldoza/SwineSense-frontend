@@ -7,6 +7,7 @@ import {
   Settings,
   LogOut,
   X,
+  Shield,
 } from "lucide-react";
 import Logo from "@/assets/SwineSense_TextLogo_White.svg";
 
@@ -93,9 +94,25 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Footer */}
         <div className="p-4 border-t border-pink-300/30 space-y-2">
           <Link
+            to="/audit"
+            onClick={onClose}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/audit')
+                ? 'bg-white/20 text-white font-semibold'
+                : 'text-white/80 hover:bg-white/10'
+            }`}
+          >
+            <Shield size={20} />
+            <span>Audit Log</span>
+          </Link>
+          <Link
             to="/settings"
             onClick={onClose}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/settings')
+                ? 'bg-white/20 text-white font-semibold'
+                : 'text-white/80 hover:bg-white/10'
+            }`}
           >
             <Settings size={20} />
             <span>Settings</span>
