@@ -81,14 +81,8 @@ export default function Dashboard() {
     .map((scan, idx) => ({
       id: idx,
       action: "Pig scanned",
-      pig: (scan as Record<string, unknown>).pig
-        ? ((scan as Record<string, unknown>).pig as Record<string, string>)
-            .pigNumber || `Pig #${scan.pigId}`
-        : `Pig #${scan.pigId}`,
-      time: new Date(
-        scan.scanTimestamp ||
-          ((scan as Record<string, unknown>).timestamp as string),
-      ).toLocaleString(),
+      pig: scan.pigId ? `Pig #${scan.pigId}` : "Unknown",
+      time: new Date(scan.scanTimestamp).toLocaleString(),
       status: "healthy" as const,
     }));
 

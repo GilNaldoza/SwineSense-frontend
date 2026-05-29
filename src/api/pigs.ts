@@ -123,6 +123,17 @@ type BackendWeight = {
   notes?: string
 }
 
+type BackendHealthLog = {
+  healthLogId?: number | string
+  id?: number | string
+  pigId?: number | string
+  previousStatus?: string
+  newStatus?: string
+  reason?: string
+  recordedAt?: string
+  admin?: { fullName?: string }
+}
+
 /**
  * Adapter to map backend Pig model to frontend PigRecord type
  */
@@ -387,5 +398,76 @@ export async function getWeightHistory(pigId: string, limit: number = 50): Promi
  */
 export async function recordWeight(pigId: string, weight: number, notes?: string): Promise<WeightLogEntry> {
   const response = await client.post(`/pigs/${pigId}/weight`, { weight, notes })
+  return response.data
+}
+
+/**
+ * Health log entry type
+ */
+export type HealthLogEntry = {
+  id: string
+  pigId: string
+  previousStatus: string
+  newStatus: string
+  reason?: string
+  recordedBy?: string
+  recordedAt: string
+}
+
+/**
+ * Get health history for a pig
+ */
+export async function getHealthHistory(pigId: string, limit: number = 50): Promise<HealthLogEntry[]> {
+  const response = await client.get(`/pigs/${pigId}/health?limit=${limit}`)
+  return (response.data || []).map((h: BackendHealthLog) => ({
+    id: String(h.healthLogId || h.id || ''),
+    pigId: String(h.pigId || ''),
+    previousStatus: h.previousStatus || '',
+    newStatus: h.newStatus || '',
+    reason: h.reason || undefined,
+    recordedBy: h.admin?.fullName || undefined,
+    recordedAt: h.recordedAt || '',
+  }))
+}
+
+/**
+ * Record a health status change
+ */
+export async function recordHealthChange(pigId: string, newStatus: string, reason?: string): Promise<HealthLogEntry> {
+  const response = await client.post(`/pigs/${pigId}/health`, { newStatus, reason })
+  return response.data
+}
+
+/**
+ * Get scan history for a specific pig
+ */
+export async function getPigScanHistory(pigId: string, limit: number = 50): Promise<PigScanLog[]> {
+  const response = await client.get(`/pigs/${pigId}/scans?limit=${limit}`)
+  return (response.data || []).map(adaptScan)
+}
+
+// ===================== BATCH OPERATIONS =====================
+
+/**
+ * Batch update health status for multiple pigs
+ */
+export async function batchUpdateHealth(pigIds: string[], healthStatus: string, reason?: string): Promise<{ message: string; updated: number[] }> {
+  const response = await client.post('/pigs/batch/health', { pigIds: pigIds.map(Number), healthStatus, reason })
+  return response.data
+}
+
+/**
+ * Batch transfer pigs to a new pen
+ */
+export async function batchTransfer(pigIds: string[], pen: string): Promise<{ message: string; count: number }> {
+  const response = await client.post('/pigs/batch/transfer', { pigIds: pigIds.map(Number), pen })
+  return response.data
+}
+
+/**
+ * Import pigs from parsed CSV rows
+ */
+export async function importPigs(rows: Record<string, string>[]): Promise<{ created: number; errors: string[] }> {
+  const response = await client.post('/pigs/import', { rows })
   return response.data
 }
