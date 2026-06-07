@@ -9,6 +9,7 @@ import {
   X,
   Shield,
   Syringe,
+  FileBarChart,
 } from "lucide-react";
 import Logo from "@/assets/SwineSense_TextLogo_White.svg";
 
@@ -27,6 +28,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { label: "Pig Management", icon: Users, path: "/pig-management" },
     { label: "Analytics", icon: BarChart3, path: "/analytics" },
     { label: "Treatments", icon: Syringe, path: "/treatments" },
+    { label: "Reports", icon: FileBarChart, path: "/reports" },
     { label: "Staff", icon: Users, path: "/staff" },
   ];
 

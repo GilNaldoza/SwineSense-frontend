@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,8 +82,10 @@ export default function PigManagementPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.success('Export Complete', { description: 'CSV file downloaded' });
     } catch (err) {
       console.error(err);
+      toast.error('Export Failed');
     } finally {
       setExporting(false);
     }
@@ -112,11 +115,13 @@ export default function PigManagementPage() {
     try {
       setBulkLoading(true);
       await batchUpdateHealth(Array.from(selected), bulkHealthStatus, bulkHealthReason || undefined);
+      toast.success('Health Updated', { description: `Updated ${selected.size} pig(s) to ${bulkHealthStatus}` });
       setShowBulkHealth(false);
       setSelected(new Set());
       fetchPigs();
     } catch (err) {
       console.error(err);
+      toast.error('Health Update Failed');
     } finally {
       setBulkLoading(false);
     }
@@ -127,12 +132,14 @@ export default function PigManagementPage() {
     try {
       setBulkLoading(true);
       await batchTransfer(Array.from(selected), bulkPen);
+      toast.success('Pigs Transferred', { description: `Moved ${selected.size} pig(s) to pen ${bulkPen}` });
       setShowBulkTransfer(false);
       setSelected(new Set());
       setBulkPen("");
       fetchPigs();
     } catch (err) {
       console.error(err);
+      toast.error('Transfer Failed');
     } finally {
       setBulkLoading(false);
     }
@@ -163,9 +170,16 @@ export default function PigManagementPage() {
 
       const result = await importPigs(rows);
       setImportResult(result);
-      if (result.created > 0) fetchPigs();
+      if (result.created > 0) {
+        toast.success('Import Complete', { description: `${result.created} pig(s) imported` });
+        fetchPigs();
+      }
+      if (result.errors.length > 0) {
+        toast.warning('Import had errors', { description: `${result.errors.length} row(s) failed` });
+      }
     } catch (err) {
       console.error(err);
+      toast.error('Import Failed');
       setImportResult({ created: 0, errors: ["Import failed"] });
     } finally {
       setBulkLoading(false);

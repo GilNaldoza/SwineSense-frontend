@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -88,9 +89,11 @@ export default function TreatmentsPage() {
       })
       setShowForm(false)
       setFormData({ pigId: "", type: "vaccination", name: "", dosage: "", administeredAt: new Date().toISOString().split("T")[0], nextDueDate: "", notes: "" })
+      toast.success('Treatment Recorded', { description: formData.name })
       fetchData()
     } catch (err) {
       console.error(err)
+      toast.error('Failed to save treatment')
     } finally {
       setSaving(false)
     }
@@ -100,9 +103,11 @@ export default function TreatmentsPage() {
     if (!confirm("Delete this treatment record?")) return
     try {
       await deleteTreatment(id)
+      toast.success('Treatment Deleted')
       fetchData()
     } catch (err) {
       console.error(err)
+      toast.error('Failed to delete treatment')
     }
   }
 
@@ -118,8 +123,10 @@ export default function TreatmentsPage() {
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
+      toast.success('Export Complete', { description: 'CSV file downloaded' })
     } catch (err) {
       console.error(err)
+      toast.error('Export Failed')
     } finally {
       setExporting(false)
     }

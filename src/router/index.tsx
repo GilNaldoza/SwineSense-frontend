@@ -12,6 +12,7 @@ import SignIn from '@/pages/signin'
 import AuditPage from '@/pages/auditPage'
 import NotFound from '@/pages/notFound'
 import TreatmentsPage from '@/pages/treatmentsPage'
+import ReportsPage from '@/pages/reportsPage'
 
 export default function Router() {
   return (
@@ -25,6 +26,7 @@ export default function Router() {
           <Route path="pig-management" element={<PigManagementPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="treatments" element={<TreatmentsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="staff" element={<StaffManagementPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="sign-in" element={<SignIn />} />
